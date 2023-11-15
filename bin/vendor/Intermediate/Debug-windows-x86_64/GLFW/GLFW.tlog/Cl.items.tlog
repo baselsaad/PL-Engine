@@ -1,0 +1,15 @@
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\context.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\context.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\egl_context.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\egl_context.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\init.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\init.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\input.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\input.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\monitor.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\monitor.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\osmesa_context.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\osmesa_context.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\vulkan.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\vulkan.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\wgl_context.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\wgl_context.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_init.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_init.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_joystick.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_joystick.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_monitor.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_monitor.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_thread.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_thread.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_time.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_time.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\win32_window.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\win32_window.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\GLFW\src\window.c;C:\Devs\Projects\PL-Engine\bin\vendor\Intermediate\Debug-windows-x86_64\GLFW\window.obj

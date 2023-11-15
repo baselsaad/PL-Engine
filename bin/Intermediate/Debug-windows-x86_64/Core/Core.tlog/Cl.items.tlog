@@ -1,0 +1,8 @@
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Core\Window.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\Window.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Event\Input.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\Input.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Event\PlayerInput.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\PlayerInput.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Utilities\DeltaTime.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\DeltaTime.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Utilities\Log.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\Log.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\Utilities\Timer.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\Timer.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\src\pch.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\pch.obj
+C:\Devs\Projects\PL-Engine\Engine\Core\vendor\stb_image\stb_image.cpp;C:\Devs\Projects\PL-Engine\bin\Intermediate\Debug-windows-x86_64\Core\stb_image.obj
