@@ -43,3 +43,13 @@
 *.sdf
 *.VC.db
 *.VC.opendb
+*.vcxproj
+*.filters
+*.idb
+*.pdb
+*.recipe
+*.log
+*.pch
+*.tlog
+*.ilk
+*.user
