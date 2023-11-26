@@ -56,7 +56,8 @@ project "Core"
 
 		defines
 		{
-			"GLEW_STATIC"
+			"GLEW_STATIC",
+			"PLATFORM_WINDOWS"
 		}
 
 	filter "configurations:Debug"

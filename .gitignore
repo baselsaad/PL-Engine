@@ -53,3 +53,7 @@
 *.tlog
 *.ilk
 *.user
+
+
+bin/*
+*.spv

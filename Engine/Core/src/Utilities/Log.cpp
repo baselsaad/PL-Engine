@@ -1,14 +1,11 @@
 #include "pch.h"
 #include "Log.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
+
 
 std::shared_ptr< spdlog::logger> Debug::s_Logger;
 
 void Debug::Init(const char* consoleName)
 {
-
 	#if DEBUG
 	spdlog::set_pattern("%^[%n] [%t] [%l]: %v%$");
 	#else

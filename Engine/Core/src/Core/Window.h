@@ -1,45 +1,34 @@
 #pragma once
-struct GLFWwindow;
+#include <GLFW/glfw3.h>
 
-struct WindowData
+namespace PL_Engine
 {
-	int Width;
-	int Height;
-	std::string Title;
-};
+	struct WindowData
+	{
+		uint32_t Width;
+		uint32_t Height;
+		std::string Title;
+		bool Vsync;
+	};
 
-class Window
-{
-public:
-	Window(const WindowData& data);
-	virtual ~Window();
+	class Window
+	{
+	public:
+		virtual ~Window() {}
 
-public:
-	void Clear();
-	void Swap();
-	void PollEvents();
+		virtual void SwapBuffers() = 0;
+		virtual void PollEvents() = 0;
+		virtual void SetVsync(bool enable) = 0;
+		virtual void UpdateWindowSize(int width, int height) = 0;
 
-	void SetVsync(bool enable);
-	inline bool IsVsyncOn() const { return m_Vsync; }
+		virtual GLFWwindow* GetWindowHandle() = 0;
+		virtual const GLFWwindow* GetWindowHandle() const = 0;
+		virtual operator GLFWwindow* () const = 0;
 
-	void UpdateWindowSize(int width, int height);
+		virtual bool IsVsyncOn() const = 0;
+		virtual uint32_t GetWindowWidth() const = 0;
+		virtual uint32_t GetWindowHeight() const = 0;
+		virtual float GetAspectRatio() const = 0;
+	};
 
-	inline GLFWwindow* GetWindowHandle() { return m_Window; }
-	inline const GLFWwindow* GetWindowHandle() const { return m_Window; }
-
-	inline int GetWindowWidth() const { return m_Width; }
-	inline int GetWindowHeight() const { return m_Height; }
-	inline float GetAspectRatio() const { return (float)m_Width / (float)m_Height; }
-
-	operator GLFWwindow* () const { return m_Window; }
-
-private:
-	void HandleErrorMessages();
-	void PrintGpuInformation();
-
-private:
-	GLFWwindow* m_Window;
-	int m_Width, m_Height;
-	bool m_Vsync;
-};
-
+}

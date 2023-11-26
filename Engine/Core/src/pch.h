@@ -10,13 +10,26 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
 #include <chrono>
 #include <thread>
-#include <Windows.h>
+#include <optional>
+
+
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
+#include <glm/glm.hpp>
+
 
 #ifdef PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif
+
+
+#include "Core/Memory.h"
+#include "Utilities/Debug.h"

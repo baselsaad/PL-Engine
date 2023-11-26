@@ -12,7 +12,7 @@ project "Editor"
 		"src/*",
 		"src/**.h",
 		"src/**.hpp",
-		"src/**.cpp"
+		"src/**.cpp",
 	}
 
 	includedirs

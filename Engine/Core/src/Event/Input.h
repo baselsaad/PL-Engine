@@ -2,16 +2,21 @@
 #include "Event.h"
 #include "glm/vec2.hpp"
 
-class Window;
 
-class Input
+namespace PL_Engine
 {
-public:
-	static bool IsMouseButtonDown(const MouseButtonKey& key);
-	static bool IsMouseButtonUp(const MouseButtonKey& key);
-	static glm::vec2 GetMousePosition();
-	
-private:
-	static void Init(Window* window);
-	friend class Application;
-};
+	class Window;
+
+	class Input
+	{
+	public:
+		static bool IsMouseButtonDown(const MouseButtonKey& key);
+		static bool IsMouseButtonUp(const MouseButtonKey& key);
+		static glm::vec2 GetMousePosition();
+
+	private:
+		static void Init(Window* window);
+		friend class App;
+	};
+
+}
