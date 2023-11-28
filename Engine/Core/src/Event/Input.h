@@ -16,7 +16,7 @@ namespace PL_Engine
 
 	private:
 		static void Init(Window* window);
-		friend class App;
+		friend class Engine;
 	};
 
 }

@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "VulkanContext.h"
 
-#include <vulkan/vulkan.h>
 
-#include <Utilities/Debug.h>
 #include <GLFW/glfw3.h>
-#include "Core/App.h"
+#include "Core/Engine.h"
+#include "VulkanDevice.h"
+#include "SwapChain.h"
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 //	Static
@@ -72,6 +72,10 @@ namespace PL_Engine
 	VkDebugUtilsMessengerEXT VulkanContext::s_DebugMessenger;
 	VkSurfaceKHR VulkanContext::s_Surface;
 
+	SharedPtr<VulkanDevice> VulkanContext::s_VulkanDevice;
+	SharedPtr<VulkanPhysicalDevice> VulkanContext::s_VulkanPhysicalDevice;
+	SharedPtr<VulkanSwapChain> VulkanContext::s_SwapChain;
+
 	static const std::vector<const char*> validationLayers =
 	{
 		"VK_LAYER_KHRONOS_validation"
@@ -111,6 +115,11 @@ namespace PL_Engine
 
 		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &s_VulkanInstance));
 		SetupDebugMessenger();
+
+		CreateSurface();
+
+		s_VulkanPhysicalDevice = MakeShared<VulkanPhysicalDevice>();
+		s_VulkanDevice = MakeShared<VulkanDevice>(s_VulkanPhysicalDevice);
 	}
 
 	void VulkanContext::Shutdown()
@@ -118,6 +127,9 @@ namespace PL_Engine
 #if DEBUG
 		DestroyDebugUtilsMessengerEXT(s_VulkanInstance, s_DebugMessenger, nullptr);
 #endif
+		s_SwapChain->CleanupSwapChain();
+		vkDestroyDevice(s_VulkanDevice->GetVkDevice(), nullptr);
+		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
 		vkDestroyInstance(s_VulkanInstance, nullptr);
 	}
 
@@ -135,7 +147,14 @@ namespace PL_Engine
 
 	void VulkanContext::CreateSurface()
 	{
-		VK_CHECK_RESULT(glfwCreateWindowSurface(s_VulkanInstance, App::Get()->GetWindow()->GetWindowHandle(), nullptr, &s_Surface));
+		VK_CHECK_RESULT(glfwCreateWindowSurface(s_VulkanInstance, Engine::Get()->GetWindow()->GetWindowHandle(), nullptr, &s_Surface));
+	}
+
+	void VulkanContext::CreateVulkanSwapChain()
+	{
+		s_SwapChain = MakeShared<VulkanSwapChain>(s_VulkanDevice);
+		s_SwapChain->Create();
+		s_SwapChain->CreateImageViews();
 	}
 
 	void VulkanContext::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)

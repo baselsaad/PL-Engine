@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "WindowsWindow.h"
+#include "Vulkan/SwapChain.h"
+#include "Vulkan/VulkanContext.h"
+#include <type_traits>
 
 
 namespace PL_Engine
@@ -11,7 +14,7 @@ namespace PL_Engine
 	}
 
 	WindowsWindow::WindowsWindow(const WindowData& data)
-		: m_Window(nullptr), m_WindowData(data)
+		: m_WindowHandle(nullptr), m_WindowData(data)
 	{
 
 		int state = glfwInit();
@@ -20,25 +23,24 @@ namespace PL_Engine
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-		m_Window = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
-		ASSERT(m_Window, "Window is null!");
+		m_WindowHandle = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
+		ASSERT(m_WindowHandle, "Window is null!");
 		SetVsync(data.Vsync);
 
 		// Make the window's context current
-		glfwMakeContextCurrent(m_Window);
+		glfwMakeContextCurrent(m_WindowHandle);
 		HandleErrorMessages();
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
-		glfwDestroyWindow(m_Window);
-		glfwTerminate();
+
 	}
 
 	void WindowsWindow::SwapBuffers()
 	{
 		/* Swap front and back buffers */
-		glfwSwapBuffers(m_Window);
+		glfwSwapBuffers(m_WindowHandle);
 	}
 
 	void WindowsWindow::PollEvents()
@@ -53,7 +55,7 @@ namespace PL_Engine
 		glfwSwapInterval(enable);
 	}
 
-	void WindowsWindow::UpdateWindowSize(int width, int height)
+	void WindowsWindow::OnResize(int width, int height)
 	{
 		m_WindowData.Width = width;
 		m_WindowData.Height = height;
@@ -61,12 +63,12 @@ namespace PL_Engine
 
 	GLFWwindow* WindowsWindow::GetWindowHandle()
 	{
-		return m_Window;
+		return m_WindowHandle;
 	}
 
 	const GLFWwindow* WindowsWindow::GetWindowHandle() const
 	{
-		return m_Window;
+		return m_WindowHandle;
 	}
 
 	bool WindowsWindow::IsVsyncOn() const
@@ -89,8 +91,29 @@ namespace PL_Engine
 		return (float)m_WindowData.Width / (float)m_WindowData.Height;
 	}
 
+	void WindowsWindow::WaitEvents()
+	{
+		glfwWaitEvents();
+	}
+
+	void WindowsWindow::GetFramebufferSize(int& width, int& height)
+	{
+		glfwGetFramebufferSize(m_WindowHandle, &width, &height);
+	}
+
+	bool WindowsWindow::ShouldClose()
+	{
+		return glfwWindowShouldClose(m_WindowHandle);
+	}
+
+	void WindowsWindow::Close()
+	{
+		glfwDestroyWindow(m_WindowHandle);
+		glfwTerminate();
+	}
+
 	void WindowsWindow::HandleErrorMessages()
 	{
-		glfwSetErrorCallback(GLFWErrorCallback);
+
 	}
 }

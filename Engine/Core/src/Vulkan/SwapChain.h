@@ -1,9 +1,13 @@
 #pragma once
-#include "Vulkan.h"
+#include "VulkanAPI.h"
 #include "VulkanDevice.h"
+
 
 namespace PL_Engine
 {
+	class Window;
+	class RenderPass;
+
 	struct SwapChainSupportDetails
 	{
 		VkSurfaceCapabilitiesKHR capabilities;
@@ -22,6 +26,7 @@ namespace PL_Engine
 		void CreateImageViews();
 		void CreateFramebuffers(VkRenderPass renderPass);
 		void CleanupSwapChain();
+		void RecreateSwapChain(const SharedPtr<RenderPass>& renderPass);
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

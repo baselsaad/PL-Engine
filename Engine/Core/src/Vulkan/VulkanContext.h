@@ -1,21 +1,28 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include "VulkanAPI.h"
 
 namespace PL_Engine
 {
+	class VulkanDevice;
+	class VulkanPhysicalDevice;
+	class VulkanSwapChain;
 
 	class VulkanContext
 	{
 	public:
 		static void Init();
 		static void CreateSurface();
+		static void CreateVulkanSwapChain();
 		static void Shutdown();
-		static std::vector<const char*> GetRequiredExtensions();
 
 		inline static VkInstance GetVulkanInstance() { return s_VulkanInstance; }
 		inline static VkSurfaceKHR GetSurface() { return s_Surface; }
 
+		inline static const SharedPtr<VulkanDevice>& GetVulkanDevice() { return s_VulkanDevice; }
+		inline static SharedPtr<VulkanSwapChain>& GetSwapChain() { return s_SwapChain; };
+
 	private:
+		static std::vector<const char*> GetRequiredExtensions();
 		static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 		static bool CheckValidationLayerSupport();
 		static void SetupDebugMessenger();
@@ -26,6 +33,9 @@ namespace PL_Engine
 		static VkDebugUtilsMessengerEXT s_DebugMessenger;
 		static VkSurfaceKHR s_Surface;
 
+		static SharedPtr<VulkanDevice> s_VulkanDevice;
+		static SharedPtr<VulkanPhysicalDevice> s_VulkanPhysicalDevice;
+		static SharedPtr<VulkanSwapChain> s_SwapChain;
 	};
 
 }

@@ -2,8 +2,11 @@
 #include "SwapChain.h"
 #include "VulkanDevice.h"
 #include "VulkanContext.h"
-#include "Core/App.h"
+#include "Core/Engine.h"
 #include <GLFW/glfw3.h>
+#include "RenderPass.h"
+#include "VulkanRenderer.h"
+#include "Renderer/Renderer.h"
 
 
 namespace PL_Engine
@@ -15,7 +18,7 @@ namespace PL_Engine
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
-		
+
 	}
 
 	void VulkanSwapChain::Create()
@@ -159,7 +162,7 @@ namespace PL_Engine
 		else
 		{
 			int width, height;
-			glfwGetFramebufferSize(*App::Get()->GetWindow(), &width, &height);
+			glfwGetFramebufferSize(*Engine::Get()->GetWindow(), &width, &height);
 
 			VkExtent2D actualExtent =
 			{
@@ -238,7 +241,28 @@ namespace PL_Engine
 			vkDestroyImageView(m_Device->GetVkDevice(), m_SwapChainImageViews[i], nullptr);
 		}
 
-		vkDestroySwapchainKHR(m_Device->GetVkDevice(),m_SwapChain, nullptr);
+		vkDestroySwapchainKHR(m_Device->GetVkDevice(), m_SwapChain, nullptr);
+	}
+
+	void VulkanSwapChain::RecreateSwapChain(const SharedPtr<RenderPass>& renderPass)
+	{
+		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
+
+		int width = 0, height = 0;
+		window->GetFramebufferSize(width, height);
+		while (width == 0 || height == 0)
+		{
+			window->GetFramebufferSize(width, height);
+			window->WaitEvents();
+		}
+
+		Renderer::WaitForIdle();// wait for resources
+
+		CleanupSwapChain();
+
+		Create();
+		CreateImageViews();
+		CreateFramebuffers(renderPass->GetVkRenderPass());
 	}
 
 }
