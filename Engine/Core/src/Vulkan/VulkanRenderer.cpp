@@ -12,6 +12,8 @@
 #include "Core/Engine.h"
 #include "Core/Window.h"
 #include "Renderer/Renderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 namespace PL_Engine
 {
@@ -25,6 +27,38 @@ namespace PL_Engine
 		VulkanContext::GetSwapChain()->CreateFramebuffers(m_RenderPass->GetVkRenderPass());
 
 		m_CommandBuffer = MakeShared<CommandBuffer>();
+
+		//const std::vector<Vertex> vertices =
+		//{
+		//	// First Quad
+		//	{ {-0.5f, -0.5f,0.0f}, {1.0f, 0.0f, 0.0f} },
+		//	{ {0.5f, -0.5f ,0.0f},  {0.0f, 1.0f, 0.0f} },
+		//	{ {0.5f, 0.5f  ,0.0f},   {0.0f, 0.0f, 1.0f} },
+		//	{ {-0.5f, 0.5f ,0.0f},  {1.0f, 1.0f, 1.0f} },
+
+		//	// Second Quad (example: shifted to the right)
+		//	{ {0.5f, -0.5f, 0.0f},  {0.0f, 1.0f, 1.0f} },
+		//	{ {1.5f, -0.5f, 0.0f},  {1.0f, 0.0f, 1.0f} },
+		//	{ {1.5f,  0.5f, 0.0f},   {1.0f, 1.0f, 0.0f} },
+		//	{ {0.5f,  0.5f, 0.0f},   {0.5f, 0.5f, 0.5f} }
+		//};
+
+		//const std::vector<uint16_t> indices =
+		//{
+		//	// First Quad
+		//	0, 1, 2,
+		//	2, 3, 0,
+
+		//	// Second Quad
+		//	4, 5, 6,
+		//	6, 7, 4
+		//};
+		//m_IndexBuffer = MakeShared<VulkanIndexBuffer>(m_CommandBuffer, (void*)indices.data(), indices.size());
+		//m_VertexBuffer = MakeShared<VulkanVertexBuffer>(m_CommandBuffer, (void*)vertices.data(), vertices.size() * sizeof(Vertex));
+
+		m_IndexBuffer = MakeShared<VulkanIndexBuffer>(m_CommandBuffer);
+		m_VertexBuffer = MakeShared<VulkanVertexBuffer>(m_CommandBuffer);
+
 		CreateSyncObjects();
 	}
 
@@ -47,6 +81,9 @@ namespace PL_Engine
 		m_CommandBuffer->Shutdown();
 		m_Pipline->Shutdown();
 		m_RenderPass->Shutdown();
+
+		m_IndexBuffer->DestroyBuffer();
+		m_VertexBuffer->DestroyBuffer();
 
 		VulkanContext::Shutdown();
 	}
@@ -91,7 +128,9 @@ namespace PL_Engine
 		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
 
 		vkResetCommandBuffer(commandBuffers[s_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-		m_CommandBuffer->RecordCommandBuffer(commandBuffers[s_CurrentFrame], imageIndex, m_RenderPass, swapchain, m_Pipline);// Actual Drawing and binding Commands
+
+		m_CommandBuffer->SubmitCommandBuffer(commandBuffers[s_CurrentFrame], imageIndex, m_RenderPass, swapchain, m_Pipline,
+			m_IndexBuffer, m_VertexBuffer, m_IndexBuffer->GetCount());// Actual Drawing and binding Commands
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -108,7 +147,7 @@ namespace PL_Engine
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[s_CurrentFrame]));
+		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[s_CurrentFrame])); // execution of the recorded commands
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

@@ -46,6 +46,6 @@ namespace PL_Engine
 
 	void Renderer::OnResizeWindow(bool resize, int width, int height)
 	{
-		s_RenderAPI->OnResizeWindow(true);
+		s_RenderAPI->OnResizeWindow(resize);
 	}
 }

@@ -8,6 +8,8 @@ namespace PL_Engine
 	class CommandBuffer;
 	class PipeLine;
 	class RenderPass;
+	class VulkanVertexBuffer;
+	class VulkanIndexBuffer;
 
 	class VulkanAPI : public IRenderAPI
 	{
@@ -32,6 +34,8 @@ namespace PL_Engine
 		SharedPtr<PipeLine> m_Pipline;
 
 		SharedPtr<CommandBuffer> m_CommandBuffer;
+		SharedPtr<VulkanVertexBuffer> m_VertexBuffer;
+		SharedPtr<VulkanIndexBuffer> m_IndexBuffer;
 
 		// semaphores
 		std::vector<VkSemaphore> m_ImageAvailableSemaphore;

@@ -8,7 +8,6 @@ namespace PL_Engine
 		virtual void Init() = 0;
 		virtual void InitRenderApiContext() = 0;
 		virtual void Shutdown() = 0;
-
 		virtual void DrawTriangle() = 0; // delete Later
 
 		virtual void WaitForIdle() = 0;

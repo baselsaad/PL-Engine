@@ -4,6 +4,7 @@
 #include "RenderPass.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
+#include "VertexBuffer.h"
 
 namespace PL_Engine
 {
@@ -37,8 +38,16 @@ namespace PL_Engine
 		vertexInputInfo.vertexBindingDescriptionCount = 0;
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
-		vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+		// pVertexBindingDescriptions & pVertexAttributeDescriptions (VertexBuffer Input)
+
+		auto bindingDescription = Vertex::GetBindingDescription();
+		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		/*
 		*	VK_PRIMITIVE_TOPOLOGY_POINT_LIST: points from vertices

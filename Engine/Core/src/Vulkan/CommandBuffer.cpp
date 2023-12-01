@@ -6,6 +6,8 @@
 #include "SwapChain.h"
 #include "GraphhicsPipeline.h"
 #include "VulkanRenderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 namespace PL_Engine
 {
@@ -44,7 +46,9 @@ namespace PL_Engine
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, m_CommandBuffers.data()));
 	}
 
-	void CommandBuffer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const SharedPtr<RenderPass>& renderpass, const SharedPtr<VulkanSwapChain>& swapChain, const SharedPtr<PipeLine>& graphicsPipline)
+	void CommandBuffer::SubmitCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const SharedPtr<RenderPass>& renderpass, 
+		const SharedPtr<VulkanSwapChain>& swapChain, const SharedPtr<PipeLine>& graphicsPipline, 
+		const SharedPtr<VulkanIndexBuffer>& indexBuffer, const SharedPtr<VulkanVertexBuffer>& vertexBuffer, uint32_t indexBufferCount)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -79,7 +83,16 @@ namespace PL_Engine
 		scissor.extent = swapChain->GetSwapChainExtent();
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		// Bind VertexBuffer
+		VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		// Bind IndexBuffer
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+		//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertexBuffer->GetVertcies().size()), 1, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexBufferCount, 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 

@@ -19,7 +19,6 @@ namespace PL_Engine
 
 		static void WaitForIdle();
 		static void OnResizeWindow(bool resize = false, int width = 0, int height = 0);
-
 	private:
 		static SharedPtr<IRenderAPI> s_RenderAPI;
 	};
