@@ -19,7 +19,7 @@ namespace PL_Engine
 			default:									ASSERT(false, "");							break;
 		}
 
-		s_RenderAPI->InitRenderApiContext(); 
+		s_RenderAPI->InitRenderApiContext();
 		s_RenderAPI->Init();
 	}
 
@@ -30,11 +30,25 @@ namespace PL_Engine
 		s_RenderAPI->Shutdown();
 	}
 
-	void Renderer::DrawTriangle()
+	void Renderer::BeginFrame()
 	{
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		s_RenderAPI->DrawTriangle();
+		s_RenderAPI->BeginFrame();
+	}
+
+	void Renderer::EndFrame()
+	{
+		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
+
+		s_RenderAPI->EndFrame();
+	}
+
+	void Renderer::DrawQuad(const glm::vec3& translation)
+	{
+		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
+
+		s_RenderAPI->DrawQuad(translation);
 	}
 
 	void Renderer::WaitForIdle()

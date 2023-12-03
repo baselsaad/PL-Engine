@@ -25,13 +25,13 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 		Debug::Info("validation layer: {0}", pCallbackData->pMessage);
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-		Debug::LogWarn("validation layer: {0}", pCallbackData->pMessage);
+		Debug::LogWarn("validation layer: {0}\n", pCallbackData->pMessage);
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-		Debug::LogError("validation layer: {0}", pCallbackData->pMessage);
+		Debug::LogError("validation layer: {0}\n", pCallbackData->pMessage);
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-		Debug::Critical("validation layer: {0}", pCallbackData->pMessage);
+		Debug::Critical("validation layer: {0}\n", pCallbackData->pMessage);
 		break;
 		default:
 		break;

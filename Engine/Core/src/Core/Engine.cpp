@@ -43,7 +43,14 @@ namespace PL_Engine
 		while (!m_Window->ShouldClose())
 		{
 			m_Window->PollEvents();
-			Renderer::DrawTriangle();
+
+			Renderer::BeginFrame();
+			{
+				Renderer::DrawQuad(glm::vec3(0.5f, -0.2f, 0.0f));
+				Renderer::DrawQuad(glm::vec3(-0.4f, 0.2f, 0.0f));
+				Renderer::DrawQuad(glm::vec3(-0.2f, 0.9f, 0.0f));
+			}
+			Renderer::EndFrame();
 		}
 
 		Renderer::WaitForIdle();

@@ -13,6 +13,9 @@ project "Editor"
 		"src/**.h",
 		"src/**.hpp",
 		"src/**.cpp",
+
+		"res/shaders/*.frag",
+		"res/shaders/*.vert"
 	}
 
 	includedirs

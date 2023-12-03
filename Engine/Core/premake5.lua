@@ -18,8 +18,8 @@ project "Core"
 		"vendor/stb_image/**.h",
 		"vendor/stb_image/**.cpp",
 
-		"vendor/glm/**.hpp",
-		"vendor/glm/**.inl",
+		"vendor/glm/glm/**.hpp",
+		"vendor/glm/glm/**.inl",
 
 		"vendor/spdlog/inlcude/spdlog/spdlog.h",
 		"vendor/spdlog/inlcude/spdlog/fmt/ostr.h",

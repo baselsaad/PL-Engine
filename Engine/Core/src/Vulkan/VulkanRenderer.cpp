@@ -28,34 +28,6 @@ namespace PL_Engine
 
 		m_CommandBuffer = MakeShared<CommandBuffer>();
 
-		//const std::vector<Vertex> vertices =
-		//{
-		//	// First Quad
-		//	{ {-0.5f, -0.5f,0.0f}, {1.0f, 0.0f, 0.0f} },
-		//	{ {0.5f, -0.5f ,0.0f},  {0.0f, 1.0f, 0.0f} },
-		//	{ {0.5f, 0.5f  ,0.0f},   {0.0f, 0.0f, 1.0f} },
-		//	{ {-0.5f, 0.5f ,0.0f},  {1.0f, 1.0f, 1.0f} },
-
-		//	// Second Quad (example: shifted to the right)
-		//	{ {0.5f, -0.5f, 0.0f},  {0.0f, 1.0f, 1.0f} },
-		//	{ {1.5f, -0.5f, 0.0f},  {1.0f, 0.0f, 1.0f} },
-		//	{ {1.5f,  0.5f, 0.0f},   {1.0f, 1.0f, 0.0f} },
-		//	{ {0.5f,  0.5f, 0.0f},   {0.5f, 0.5f, 0.5f} }
-		//};
-
-		//const std::vector<uint16_t> indices =
-		//{
-		//	// First Quad
-		//	0, 1, 2,
-		//	2, 3, 0,
-
-		//	// Second Quad
-		//	4, 5, 6,
-		//	6, 7, 4
-		//};
-		//m_IndexBuffer = MakeShared<VulkanIndexBuffer>(m_CommandBuffer, (void*)indices.data(), indices.size());
-		//m_VertexBuffer = MakeShared<VulkanVertexBuffer>(m_CommandBuffer, (void*)vertices.data(), vertices.size() * sizeof(Vertex));
-
 		m_IndexBuffer = MakeShared<VulkanIndexBuffer>(m_CommandBuffer);
 		m_VertexBuffer = MakeShared<VulkanVertexBuffer>(m_CommandBuffer);
 
@@ -98,19 +70,19 @@ namespace PL_Engine
 		s_ResizeFrameBuffer = resize;
 	}
 
-	void VulkanAPI::DrawTriangle()
+	void VulkanAPI::SubmitDrawCommand(const std::function<void()>& drawCommand)
 	{
-		DrawFrame();
+		m_DrawCommands.push_back(drawCommand);
 	}
 
-	void VulkanAPI::DrawFrame()
+	void VulkanAPI::BeginFrame()
 	{
 		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
 
 		vkWaitForFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[s_CurrentFrame], VK_TRUE, UINT64_MAX);
 
-		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(VulkanContext::GetVulkanDevice()->GetVkDevice(), swapchain->GetVkSwapChain(), UINT64_MAX, m_ImageAvailableSemaphore[s_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		m_ImageIndex = 0;
+		VkResult result = vkAcquireNextImageKHR(VulkanContext::GetVulkanDevice()->GetVkDevice(), swapchain->GetVkSwapChain(), UINT64_MAX, m_ImageAvailableSemaphore[s_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -122,15 +94,44 @@ namespace PL_Engine
 			ASSERT(false, "failed to acquire swap chain image!");
 		}
 
-		// Only reset the fence if we are submitting work
-		vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[s_CurrentFrame]);
-
+		//Command Buffer
+		// TODO: Move later
 		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
-
 		vkResetCommandBuffer(commandBuffers[s_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
-		m_CommandBuffer->SubmitCommandBuffer(commandBuffers[s_CurrentFrame], imageIndex, m_RenderPass, swapchain, m_Pipline,
-			m_IndexBuffer, m_VertexBuffer, m_IndexBuffer->GetCount());// Actual Drawing and binding Commands
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffers[s_CurrentFrame], &beginInfo));
+
+		vkCmdBindPipeline(commandBuffers[s_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipline->GetGraphicsPipeline());
+	}
+
+	void VulkanAPI::EndFrame()
+	{
+		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(swapchain->GetSwapChainExtent().width);
+		viewport.height = static_cast<float>(swapchain->GetSwapChainExtent().height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffers[s_CurrentFrame], 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = swapchain->GetSwapChainExtent();
+		vkCmdSetScissor(commandBuffers[s_CurrentFrame], 0, 1, &scissor);
+
+		// CommandBuffer
+		{
+			m_RenderPass->Begin(commandBuffers[s_CurrentFrame], m_ImageIndex);
+			ExcuteDrawCommands();
+			m_RenderPass->End(commandBuffers[s_CurrentFrame]);
+			VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
+		}
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -147,6 +148,8 @@ namespace PL_Engine
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
+		// Only reset the fence if we are submitting work
+		vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[s_CurrentFrame]);
 		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[s_CurrentFrame])); // execution of the recorded commands
 
 		VkPresentInfoKHR presentInfo{};
@@ -159,11 +162,9 @@ namespace PL_Engine
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 
-		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pImageIndices = &m_ImageIndex;
 
-		result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
-
-		const auto& window = Engine::Get()->GetWindow();
+		VkResult result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_ResizeFrameBuffer)
 		{
@@ -176,6 +177,35 @@ namespace PL_Engine
 		}
 
 		s_CurrentFrame = (s_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	}
+
+	void VulkanAPI::DrawQuad(const glm::vec3& translation)
+	{
+		auto drawCommand = [this, &translation]() -> void
+		{
+			const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+			const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
+
+			// Bind VertexBuffer
+			VkBuffer vertexBuffers[] = { m_VertexBuffer->GetVkVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[s_CurrentFrame], 0, 1, vertexBuffers, offsets);
+
+			// Bind IndexBuffer
+			vkCmdBindIndexBuffer(commandBuffers[s_CurrentFrame], m_IndexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+			glm::mat4 transform =
+				glm::translate(glm::mat4(1.0f), translation)
+				* glm::mat4(1.0f)
+				* glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+
+			vkCmdPushConstants(commandBuffers[s_CurrentFrame], m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
+
+			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], m_IndexBuffer->GetCount(), 1, 0, 0, 0);
+			//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertexBuffer->GetVertcies().size()), 1, 0, 0);
+		};
+
+		SubmitDrawCommand(drawCommand);
 	}
 
 	void VulkanAPI::CreateSyncObjects()
@@ -199,4 +229,14 @@ namespace PL_Engine
 			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
 		}
 	}
+
+	void VulkanAPI::ExcuteDrawCommands()
+	{
+		for (auto& func : m_DrawCommands)
+		{
+			func();
+		}
+		m_DrawCommands.clear();
+	}
+
 }

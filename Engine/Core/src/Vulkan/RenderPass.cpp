@@ -54,4 +54,26 @@ namespace PL_Engine
 		vkDestroyRenderPass(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_RenderPass, nullptr);
 	}
 
+	void RenderPass::Begin(VkCommandBuffer currentCommandBuffer, uint32_t imageIndex)
+	{
+		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = GetVkRenderPass();
+		renderPassInfo.framebuffer = swapchain->GetSwapChainFramebuffers()[imageIndex];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = swapchain->GetSwapChainExtent();
+		VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(currentCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	void RenderPass::End(VkCommandBuffer currentCommandBuffer)
+	{
+		vkCmdEndRenderPass(currentCommandBuffer);
+	}
+
 }

@@ -12,6 +12,9 @@ namespace PL_Engine
 
 		void Shutdown();
 
+		void Begin(VkCommandBuffer currentCommandBuffer, uint32_t imageIndex);
+		void End(VkCommandBuffer currentCommandBuffer);
+
 		inline VkRenderPass GetVkRenderPass() { return m_RenderPass; }
 		inline const VkRenderPass GetVkRenderPass() const { return m_RenderPass; }
 

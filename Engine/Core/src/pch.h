@@ -24,6 +24,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 
 #ifdef PLATFORM_WINDOWS
