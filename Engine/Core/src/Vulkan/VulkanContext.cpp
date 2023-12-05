@@ -91,7 +91,7 @@ namespace PL_Engine
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "PL-Engine";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_2;
 
 		VkInstanceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -120,6 +120,7 @@ namespace PL_Engine
 
 		s_VulkanPhysicalDevice = MakeShared<VulkanPhysicalDevice>();
 		s_VulkanDevice = MakeShared<VulkanDevice>(s_VulkanPhysicalDevice);
+
 	}
 
 	void VulkanContext::Shutdown()
@@ -131,6 +132,8 @@ namespace PL_Engine
 		vkDestroyDevice(s_VulkanDevice->GetVkDevice(), nullptr);
 		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
 		vkDestroyInstance(s_VulkanInstance, nullptr);
+
+		
 	}
 
 	void VulkanContext::SetupDebugMessenger()

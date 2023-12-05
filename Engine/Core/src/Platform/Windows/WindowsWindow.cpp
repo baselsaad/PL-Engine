@@ -34,13 +34,11 @@ namespace PL_Engine
 
 	WindowsWindow::~WindowsWindow()
 	{
-
 	}
 
 	void WindowsWindow::SwapBuffers()
 	{
 		/* Swap front and back buffers */
-		glfwSwapBuffers(m_WindowHandle);
 	}
 
 	void WindowsWindow::PollEvents()
@@ -52,7 +50,6 @@ namespace PL_Engine
 	void WindowsWindow::SetVsync(bool enable)
 	{
 		m_WindowData.Vsync = enable;
-		glfwSwapInterval(enable);
 	}
 
 	void WindowsWindow::OnResize(int width, int height)

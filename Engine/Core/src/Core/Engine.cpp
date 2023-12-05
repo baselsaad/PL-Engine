@@ -11,6 +11,7 @@
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanRenderer.h"
 #include "Renderer/Renderer.h"
+#include "Utilities/Colors.h"
 
 namespace PL_Engine
 {
@@ -24,7 +25,7 @@ namespace PL_Engine
 		data.Width = 800;
 		data.Height = 600;
 		data.Title = "PL Engine";
-		data.Vsync = false;
+		data.Vsync = true;
 
 		m_Window = MakeUnique<WindowsWindow>(data);
 
@@ -33,6 +34,7 @@ namespace PL_Engine
 		glfwSetFramebufferSizeCallback(*m_Window, [](GLFWwindow* window, int width, int height) -> void
 		{
 			Renderer::OnResizeWindow(true, width, height);
+			Engine::Get()->GetWindow()->OnResize(width, height);
 		});
 	}
 
@@ -40,15 +42,20 @@ namespace PL_Engine
 	{
 		Renderer::Init(RenderAPITarget::Vulkan);
 
+		constexpr glm::vec3 scale(3.0f);
+		std::srand(static_cast<unsigned int>(std::time(0)));
+
 		while (!m_Window->ShouldClose())
 		{
 			m_Window->PollEvents();
 
 			Renderer::BeginFrame();
 			{
-				Renderer::DrawQuad(glm::vec3(0.5f, -0.2f, 0.0f));
-				Renderer::DrawQuad(glm::vec3(-0.4f, 0.2f, 0.0f));
-				Renderer::DrawQuad(glm::vec3(-0.2f, 0.9f, 0.0f));
+				Renderer::DrawQuad(glm::vec3(-2.0f, 1.0f, 0.0f), scale, Colors::Blue);
+				Renderer::DrawQuad(glm::vec3(2.0f, -3.5f, 0.0f), scale, Colors::Yellow);
+				Renderer::DrawQuad(glm::vec3(3.0f, 1.0f, 0.0f), scale, Colors::Spring_Green);
+				Renderer::DrawQuad(glm::vec3(-4.0f, -3.0f, 0.0f), scale, Colors::Tan);
+				Renderer::DrawQuad(glm::vec3(5.0f, 3.5f, 0.0f), scale, Colors::Dark_Magenta);
 			}
 			Renderer::EndFrame();
 		}

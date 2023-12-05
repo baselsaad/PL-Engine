@@ -4,63 +4,57 @@
 #include "VertexBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
+#include "VulkanRenderer.h"
+#include "CommandBuffer.h"
+#include "VulkanAPI.h"
 
 
 namespace PL_Engine
 {
 
-	VulkanIndexBuffer::VulkanIndexBuffer(const SharedPtr<CommandBuffer>& commandBuffer, uint32_t count)
-		: m_Count(count)
+	VulkanIndexBuffer::VulkanIndexBuffer(const SharedPtr<CommandBuffer>& cmBuffer, void* data, uint32_t size)
+		: m_Size(size)
 	{
 		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
+		VkCommandBuffer copyCmd = cmBuffer->GetCommandBuffers()[VulkanAPI::GetCurrentFrame()];
 
-		VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
+		VulkanMemoryAllocator allocator("IndexBuffer");
+
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.size = size;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		VmaAllocation stagingBufferAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer);
 
-		void* data;
-		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, m_Indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(device, stagingBufferMemory);
+		uint8_t* destData = allocator.MapMemory<uint8_t>(stagingBufferAllocation);
+		memcpy(destData, data, size);
+		allocator.UnmapMemory(stagingBufferAllocation);
 
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
-		VulkanUtilities::CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize, commandBuffer);
+		VkBufferCreateInfo indexBufferCreateInfo = {};
+		indexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		indexBufferCreateInfo.size = size;
+		indexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		m_VmaAllocation = allocator.AllocateBuffer(indexBufferCreateInfo, VMA_MEMORY_USAGE_GPU_ONLY, m_IndexBuffer);
 
-		vkDestroyBuffer(device, stagingBuffer, nullptr);
-		vkFreeMemory(device, stagingBufferMemory, nullptr);
+		VulkanUtilities::CopyBuffer(stagingBuffer, m_IndexBuffer, size, cmBuffer);
+
+		allocator.DestroyBuffer(stagingBuffer, stagingBufferAllocation);
 	}
 
-	VulkanIndexBuffer::VulkanIndexBuffer(const SharedPtr<CommandBuffer>& commandBuffer, void* data, uint32_t count)
-		: m_Count(count)
+	VulkanIndexBuffer::~VulkanIndexBuffer()
 	{
-		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
-
-		VkDeviceSize bufferSize = count * sizeof(uint16_t);
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* mappedData;
-		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &mappedData);
-		memcpy(mappedData, data, (size_t)bufferSize);
-		vkUnmapMemory(device, stagingBufferMemory);
-
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_IndexBuffer, m_IndexBufferMemory);
-		VulkanUtilities::CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize, commandBuffer);
-
-		vkDestroyBuffer(device, stagingBuffer, nullptr);
-		vkFreeMemory(device, stagingBufferMemory, nullptr);
+		//DestroyBuffer();
 	}
 
 	void VulkanIndexBuffer::DestroyBuffer()
 	{
 		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
 
-		vkDestroyBuffer(device, m_IndexBuffer, nullptr);
-		vkFreeMemory(device, m_IndexBufferMemory, nullptr);
+		VulkanMemoryAllocator allocator("IndexBuffer");
+		allocator.DestroyBuffer(m_IndexBuffer, m_VmaAllocation);
 	}
 
 }

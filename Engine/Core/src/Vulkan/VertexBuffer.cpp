@@ -9,56 +9,49 @@
 #include "VulkanDevice.h"
 #include "CommandBuffer.h"
 #include "vulkan/vulkan_core.h"
+#include "VulkanAPI.h"
+#include "Renderer/Renderer.h"
 
 namespace PL_Engine
 {
 
-	VulkanVertexBuffer::VulkanVertexBuffer(const SharedPtr<CommandBuffer>& commandBuffer)
+	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t size)
+		: m_Size(size)
 	{
-		auto vulkanDevice = VulkanContext::GetVulkanDevice()->GetVkDevice();
+		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
 
-		VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
+		VulkanMemoryAllocator allocator("VertexBuffer");
 
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_StagingBuffer, m_StagingBufferMemory);
+		VkBufferCreateInfo vertexBufferCreateInfo = {};
+		vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		vertexBufferCreateInfo.size = size;
+		vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		void* data;
-		vkMapMemory(vulkanDevice, m_StagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, m_Vertices.data(), (size_t)bufferSize);
-		vkUnmapMemory(vulkanDevice, m_StagingBufferMemory);
-
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
-		VulkanUtilities::CopyBuffer(m_StagingBuffer, m_VertexBuffer, bufferSize, commandBuffer);
-
-		vkDestroyBuffer(vulkanDevice, m_StagingBuffer, nullptr);
-		vkFreeMemory(vulkanDevice, m_StagingBufferMemory, nullptr);
-	}
-
-	VulkanVertexBuffer::VulkanVertexBuffer(const SharedPtr<CommandBuffer>& commandBuffer, void* data, uint32_t size)
-	{
-		auto vulkanDevice = VulkanContext::GetVulkanDevice()->GetVkDevice();
-
-		VkDeviceSize bufferSize = size;
-
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_StagingBuffer, m_StagingBufferMemory);
-
-		void* mappedData;
-		vkMapMemory(vulkanDevice, m_StagingBufferMemory, 0, bufferSize, 0, &mappedData);
-		memcpy(mappedData, data, (size_t)bufferSize);
-		vkUnmapMemory(vulkanDevice, m_StagingBufferMemory);
-
-		VulkanUtilities::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_VertexBuffer, m_VertexBufferMemory);
-		VulkanUtilities::CopyBuffer(m_StagingBuffer, m_VertexBuffer, bufferSize, commandBuffer);
-
-		vkDestroyBuffer(vulkanDevice, m_StagingBuffer, nullptr);
-		vkFreeMemory(vulkanDevice, m_StagingBufferMemory, nullptr);
+		m_VmaAllocation = allocator.AllocateBuffer(vertexBufferCreateInfo, VMA_MEMORY_USAGE_CPU_TO_GPU, m_VertexBuffer);
 	}
 
 	void VulkanVertexBuffer::DestroyBuffer()
 	{
-		auto vulkanDevice = VulkanContext::GetVulkanDevice()->GetVkDevice();
+		VulkanMemoryAllocator allocator("VertexBuffer");
+		allocator.DestroyBuffer(m_VertexBuffer, m_VmaAllocation);
+	}
 
-		vkDestroyBuffer(vulkanDevice, m_VertexBuffer, nullptr);
-		vkFreeMemory(vulkanDevice, m_VertexBufferMemory, nullptr);
+	void VulkanVertexBuffer::SetData(QuadVertex* data, uint32_t size, uint32_t offset)
+	{
+		//auto command = [this, data, size, offset]()
+		//{
+		//	VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+		//	uint8_t* pData = allocator.MapMemory<uint8_t>(m_VmaAllocation);
+		//	memcpy(pData, (uint8_t*)data + offset, size);
+		//	allocator.UnmapMemory(m_VmaAllocation);
+		//};
+
+		//Renderer::SubmitCommand(command);
+
+		VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+		QuadVertex* pData = allocator.MapMemory<QuadVertex>(m_VmaAllocation);
+		memcpy(pData, data + offset, size);
+		allocator.UnmapMemory(m_VmaAllocation);
 	}
 
 }

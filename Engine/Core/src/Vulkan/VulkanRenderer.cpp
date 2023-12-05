@@ -14,24 +14,20 @@
 #include "Renderer/Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "glm/gtx/quaternion.hpp"
 
 namespace PL_Engine
 {
 	uint32_t VulkanAPI::s_CurrentFrame = 0;
 	bool VulkanAPI::s_ResizeFrameBuffer = false;
 
+
 	void VulkanAPI::Init()
 	{
 		m_RenderPass = MakeShared<RenderPass>(VulkanContext::GetVulkanDevice());
 		m_Pipline = MakeShared<PipeLine>(m_RenderPass);
 		VulkanContext::GetSwapChain()->CreateFramebuffers(m_RenderPass->GetVkRenderPass());
-
 		m_CommandBuffer = MakeShared<CommandBuffer>();
-
-		m_IndexBuffer = MakeShared<VulkanIndexBuffer>(m_CommandBuffer);
-		m_VertexBuffer = MakeShared<VulkanVertexBuffer>(m_CommandBuffer);
-
-		CreateSyncObjects();
 	}
 
 	void VulkanAPI::InitRenderApiContext()
@@ -42,21 +38,11 @@ namespace PL_Engine
 
 	void VulkanAPI::Shutdown()
 	{
-		//Delete Semaphores
-		for (size_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); i++)
-		{
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
-			vkDestroyFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_InFlightFence[i], nullptr);
-		}
-
 		m_CommandBuffer->Shutdown();
 		m_Pipline->Shutdown();
 		m_RenderPass->Shutdown();
 
-		m_IndexBuffer->DestroyBuffer();
-		m_VertexBuffer->DestroyBuffer();
-
+		VulkanMemoryAllocator::Shutdown();
 		VulkanContext::Shutdown();
 	}
 
@@ -70,34 +56,21 @@ namespace PL_Engine
 		s_ResizeFrameBuffer = resize;
 	}
 
-	void VulkanAPI::SubmitDrawCommand(const std::function<void()>& drawCommand)
+	void VulkanAPI::SubmitCommand(const std::function<void()>& command)
 	{
-		m_DrawCommands.push_back(drawCommand);
+		m_Commands.push_back(command);
 	}
 
 	void VulkanAPI::BeginFrame()
 	{
 		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
-
-		vkWaitForFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[s_CurrentFrame], VK_TRUE, UINT64_MAX);
-
-		m_ImageIndex = 0;
-		VkResult result = vkAcquireNextImageKHR(VulkanContext::GetVulkanDevice()->GetVkDevice(), swapchain->GetVkSwapChain(), UINT64_MAX, m_ImageAvailableSemaphore[s_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		{
-			swapchain->RecreateSwapChain(m_RenderPass);
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-		{
-			ASSERT(false, "failed to acquire swap chain image!");
-		}
-
-		//Command Buffer
-		// TODO: Move later
 		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
-		vkResetCommandBuffer(commandBuffers[s_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+
+		// TODO: Move later
+		{
+			VulkanContext::GetSwapChain()->AcquireNextImage(m_RenderPass);
+			vkResetCommandBuffer(commandBuffers[s_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+		}
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -127,116 +100,71 @@ namespace PL_Engine
 
 		// CommandBuffer
 		{
-			m_RenderPass->Begin(commandBuffers[s_CurrentFrame], m_ImageIndex);
+			m_RenderPass->Begin(commandBuffers[s_CurrentFrame], swapchain->GetImageIndex());
 			ExcuteDrawCommands();
 			m_RenderPass->End(commandBuffers[s_CurrentFrame]);
 			VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
 		}
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[s_CurrentFrame];
-
-		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore[s_CurrentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-
-		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore[s_CurrentFrame] };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		// Only reset the fence if we are submitting work
-		vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[s_CurrentFrame]);
-		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[s_CurrentFrame])); // execution of the recorded commands
-
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { swapchain->GetVkSwapChain() };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-
-		presentInfo.pImageIndices = &m_ImageIndex;
-
-		VkResult result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_ResizeFrameBuffer)
-		{
-			s_ResizeFrameBuffer = false; // reset
-			swapchain->RecreateSwapChain(m_RenderPass);
-		}
-		else if (result != VK_SUCCESS)
-		{
-			ASSERT(false, "failed to present swap chain image!");
-		}
-
-		s_CurrentFrame = (s_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_CommandBuffer); //Move later the main loop 
 	}
 
-	void VulkanAPI::DrawQuad(const glm::vec3& translation)
+	void VulkanAPI::DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount)
 	{
-		auto drawCommand = [this, &translation]() -> void
+		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount]() -> void
 		{
 			const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
 			const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
 
 			// Bind VertexBuffer
-			VkBuffer vertexBuffers[] = { m_VertexBuffer->GetVkVertexBuffer() };
+			VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffers[s_CurrentFrame], 0, 1, vertexBuffers, offsets);
 
 			// Bind IndexBuffer
-			vkCmdBindIndexBuffer(commandBuffers[s_CurrentFrame], m_IndexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(commandBuffers[s_CurrentFrame], indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			glm::mat4 transform =
-				glm::translate(glm::mat4(1.0f), translation)
-				* glm::mat4(1.0f)
-				* glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+			// @TODO: Camera
+			glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
+			glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };
+			glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
-			vkCmdPushConstants(commandBuffers[s_CurrentFrame], m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
+			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
 
-			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], m_IndexBuffer->GetCount(), 1, 0, 0, 0);
-			//vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertexBuffer->GetVertcies().size()), 1, 0, 0);
+			glm::mat4 cameraTransform = glm::translate(glm::mat4(1.0f), Translation)
+				* rotation
+				* glm::scale(glm::mat4(1.0f), Scale);
+
+			const float orthographicSize = 10.0f;
+			const float orthographicNear = -1.0f;
+			const float orthographicFar = 1.0f;
+			const float aspectRatio = Engine::Get()->GetWindow()->GetAspectRatio();
+
+			float orthoLeft = -orthographicSize * aspectRatio * 0.5f;
+			float orthoRight = orthographicSize * aspectRatio * 0.5f;
+			float orthoBottom = -orthographicSize * 0.5f;
+			float orthoTop = orthographicSize * 0.5f;
+
+			glm::mat4 projection = glm::ortho(orthoLeft, orthoRight,
+				orthoBottom, orthoTop, orthographicNear, orthographicFar);
+
+			projection = projection * glm::inverse(cameraTransform);
+
+			vkCmdPushConstants(commandBuffers[s_CurrentFrame], m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
+
+			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], indexCount, 1, 0, 0, 0);
 		};
 
-		SubmitDrawCommand(drawCommand);
-	}
-
-	void VulkanAPI::CreateSyncObjects()
-	{
-		m_ImageAvailableSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
-		m_RenderFinishedSemaphore.resize(MAX_FRAMES_IN_FLIGHT);
-		m_InFlightFence.resize(MAX_FRAMES_IN_FLIGHT);
-
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		// Each Frame has it's own Semaphores and Fences
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
-		}
+		SubmitCommand(drawCommand);
 	}
 
 	void VulkanAPI::ExcuteDrawCommands()
 	{
-		for (auto& func : m_DrawCommands)
+		for (auto& func : m_Commands)
 		{
 			func();
 		}
-		m_DrawCommands.clear();
+		m_Commands.clear();
 	}
 
 }

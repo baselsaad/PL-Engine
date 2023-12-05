@@ -2,7 +2,10 @@
 
 namespace PL_Engine
 {
-	class IRenderAPI 
+	class VulkanVertexBuffer;
+	class VulkanIndexBuffer;
+
+	class IRenderAPI
 	{
 	public:
 		virtual void Init() = 0;
@@ -12,7 +15,9 @@ namespace PL_Engine
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
 
-		virtual void DrawQuad(const glm::vec3& translation = glm::vec3(0.0f)) = 0; // delete Later
+		virtual void DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount) = 0; // delete Later
+
+		virtual void SubmitCommand(const std::function<void()>& command) = 0;
 
 		virtual void WaitForIdle() = 0;
 		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) = 0;

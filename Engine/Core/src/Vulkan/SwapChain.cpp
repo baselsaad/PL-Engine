@@ -7,12 +7,15 @@
 #include "RenderPass.h"
 #include "VulkanRenderer.h"
 #include "Renderer/Renderer.h"
+#include "CommandBuffer.h"
+#include "Utilities/Timer.h"
 
 
 namespace PL_Engine
 {
 	VulkanSwapChain::VulkanSwapChain(const std::shared_ptr<VulkanDevice>& device)
 		: m_Device(device)
+		, m_ImageIndex(0)
 	{
 	}
 
@@ -28,7 +31,7 @@ namespace PL_Engine
 
 		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(phyDevice, surface);
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes, Engine::Get()->GetWindow()->IsVsyncOn());
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
 		//it is recommended to request at least one more image than the minimum
@@ -84,6 +87,8 @@ namespace PL_Engine
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, nullptr);
 		m_SwapChainImages.resize(imageCount);
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
+
+		CreateSyncObjects();
 	}
 
 	SwapChainSupportDetails VulkanSwapChain::QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
@@ -117,7 +122,12 @@ namespace PL_Engine
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			//if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			//{
+			//	return availableFormat;
+			//}
+
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return availableFormat;
 			}
@@ -126,7 +136,7 @@ namespace PL_Engine
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync)
 	{
 		/*
 		*	VK_PRESENT_MODE_IMMEDIATE_KHR: Images submitted by your application are transferred to the screen right away, which may result in tearing.
@@ -141,16 +151,27 @@ namespace PL_Engine
 		*	VK_PRESENT_MODE_MAILBOX_KHR: This is another variation of the second mode.
 				Instead of blocking the application when the queue is full, the images that are already queued are simply replaced with the newer ones. This mode can be used to render frames as fast as possible while still avoiding tearing, resulting in fewer latency issues than standard vertical sync. This is commonly known as "triple buffering", although the existence of three buffers alone does not necessarily mean that the framerate is unlocked.
 		*/
+		VkPresentModeKHR swapchainPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+		if (vsync)
+		{
+			return swapchainPresentMode;
+		}
 
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
 			{
-				return availablePresentMode;
+				swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+				break;
+			}
+
+			if ((swapchainPresentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR))
+			{
+				swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 			}
 		}
 
-		return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+		return swapchainPresentMode;
 	}
 
 	VkExtent2D VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
@@ -176,6 +197,24 @@ namespace PL_Engine
 
 			return actualExtent;
 		}
+	}
+
+	uint32_t VulkanSwapChain::AcquireNextImage(const SharedPtr<RenderPass>& renderpass)
+	{
+		m_ImageIndex = 0;
+		VkResult result = vkAcquireNextImageKHR(m_Device->GetVkDevice(), m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore[VulkanAPI::s_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			RecreateSwapChain(renderpass);
+			return m_ImageIndex;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			ASSERT(false, "failed to acquire swap chain image!");
+		}
+
+		return m_ImageIndex;
 	}
 
 	void VulkanSwapChain::CreateImageViews()
@@ -242,6 +281,14 @@ namespace PL_Engine
 		}
 
 		vkDestroySwapchainKHR(m_Device->GetVkDevice(), m_SwapChain, nullptr);
+
+		//Delete Semaphores
+		for (size_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); i++)
+		{
+			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
+			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
+			vkDestroyFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_InFlightFence[i], nullptr);
+		}
 	}
 
 	void VulkanSwapChain::RecreateSwapChain(const SharedPtr<RenderPass>& renderPass)
@@ -263,6 +310,83 @@ namespace PL_Engine
 		Create();
 		CreateImageViews();
 		CreateFramebuffers(renderPass->GetVkRenderPass());
+	}
+
+	void VulkanSwapChain::PresentFrame(const SharedPtr<RenderPass>& renderpass, const SharedPtr<CommandBuffer>& commandBuffer)
+	{
+		auto& commandBuffers = commandBuffer->GetCommandBuffers();
+		uint32_t& currentFrame = VulkanAPI::s_CurrentFrame;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+
+		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore[currentFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore[currentFrame] };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		// Only reset the fence if we are submitting work
+		vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[currentFrame]);
+		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[currentFrame])); // execution of the recorded commands
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { m_SwapChain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+		presentInfo.pImageIndices = &m_ImageIndex;
+
+		VkResult result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer)
+		{
+			VulkanAPI::s_ResizeFrameBuffer = false; // reset
+			RecreateSwapChain(renderpass);
+		}
+		else if (result != VK_SUCCESS)
+		{
+			ASSERT(false, "failed to present swap chain image!");
+		}
+
+		currentFrame = (currentFrame + 1) % VulkanAPI::MAX_FRAMES_IN_FLIGHT;
+
+		{
+			//SCOPE_TIMER();
+			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[currentFrame], VK_TRUE, UINT64_MAX));
+		}
+	}
+
+	void VulkanSwapChain::CreateSyncObjects()
+	{
+		m_ImageAvailableSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+		m_RenderFinishedSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+		m_InFlightFence.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		// Each Frame has it's own Semaphores and Fences
+		for (size_t i = 0; i < VulkanAPI::MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
+		}
 	}
 
 }

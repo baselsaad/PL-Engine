@@ -40,8 +40,8 @@ namespace PL_Engine
 
 		// pVertexBindingDescriptions & pVertexAttributeDescriptions (VertexBuffer Input)
 
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+		auto bindingDescription = QuadVertex::GetBindingDescription();
+		auto attributeDescriptions = QuadVertex::GetAttributeDescriptions();
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
