@@ -21,14 +21,14 @@ namespace PL_Engine
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
 
-		virtual void DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount) override;
+		virtual void DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount, const glm::mat4& projection) override;
 		
 		virtual void WaitForIdle() override;
 		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) override;
 
 		virtual void SubmitCommand(const std::function<void()>& drawCommand);
 
-		inline static int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
+		inline static constexpr int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 		inline static uint32_t GetCurrentFrame() { return s_CurrentFrame; }
 		inline const SharedPtr<RenderPass>& GetRenderPass() { return m_RenderPass; }
 		inline const SharedPtr<PipeLine> GetGraphicsPipline() { return m_Pipline; }
@@ -44,7 +44,7 @@ namespace PL_Engine
 
 		std::vector <std::function<void()>> m_Commands;
 
-		static const int MAX_FRAMES_IN_FLIGHT = 2;
+		static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 		static uint32_t s_CurrentFrame;
 		static bool s_ResizeFrameBuffer;
 

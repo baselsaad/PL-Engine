@@ -103,15 +103,16 @@ namespace PL_Engine
 			m_RenderPass->Begin(commandBuffers[s_CurrentFrame], swapchain->GetImageIndex());
 			ExcuteDrawCommands();
 			m_RenderPass->End(commandBuffers[s_CurrentFrame]);
+
 			VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
 		}
 
 		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_CommandBuffer); //Move later the main loop 
 	}
 
-	void VulkanAPI::DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount)
+	void VulkanAPI::DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
-		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount]() -> void
+		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
 		{
 			const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
 			const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
@@ -123,35 +124,7 @@ namespace PL_Engine
 
 			// Bind IndexBuffer
 			vkCmdBindIndexBuffer(commandBuffers[s_CurrentFrame], indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-			// @TODO: Camera
-			glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
-			glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };
-			glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
-
-			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
-
-			glm::mat4 cameraTransform = glm::translate(glm::mat4(1.0f), Translation)
-				* rotation
-				* glm::scale(glm::mat4(1.0f), Scale);
-
-			const float orthographicSize = 10.0f;
-			const float orthographicNear = -1.0f;
-			const float orthographicFar = 1.0f;
-			const float aspectRatio = Engine::Get()->GetWindow()->GetAspectRatio();
-
-			float orthoLeft = -orthographicSize * aspectRatio * 0.5f;
-			float orthoRight = orthographicSize * aspectRatio * 0.5f;
-			float orthoBottom = -orthographicSize * 0.5f;
-			float orthoTop = orthographicSize * 0.5f;
-
-			glm::mat4 projection = glm::ortho(orthoLeft, orthoRight,
-				orthoBottom, orthoTop, orthographicNear, orthographicFar);
-
-			projection = projection * glm::inverse(cameraTransform);
-
 			vkCmdPushConstants(commandBuffers[s_CurrentFrame], m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
-
 			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], indexCount, 1, 0, 0, 0);
 		};
 

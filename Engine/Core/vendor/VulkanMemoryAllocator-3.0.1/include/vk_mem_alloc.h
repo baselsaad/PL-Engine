@@ -5899,7 +5899,7 @@ public:
         uint32_t algorithm,
         VkDeviceSize bufferImageGranularity);
     // Always call before destruction.
-    void Destroy(VmaAllocator allocator);
+    void DestroyAll(VmaAllocator allocator);
 
     VmaPool GetParentPool() const { return m_hParentPool; }
     VkDeviceMemory GetDeviceMemory() const { return m_hMemory; }
@@ -6506,7 +6506,7 @@ public:
 
     void Init(const VkAllocationCallbacks* pAllocationCallbacks, VkDeviceSize size);
     // Before destroying object you must call free it's memory
-    void Destroy(const VkAllocationCallbacks* pAllocationCallbacks);
+    void DestroyAll(const VkAllocationCallbacks* pAllocationCallbacks);
 
     void RoundupAllocRequest(VmaSuballocationType allocType,
         VkDeviceSize& inOutAllocSize,
@@ -6568,7 +6568,7 @@ void VmaBlockBufferImageGranularity::Init(const VkAllocationCallbacks* pAllocati
     }
 }
 
-void VmaBlockBufferImageGranularity::Destroy(const VkAllocationCallbacks* pAllocationCallbacks)
+void VmaBlockBufferImageGranularity::DestroyAll(const VkAllocationCallbacks* pAllocationCallbacks)
 {
     if (m_RegionInfo)
     {
@@ -10061,7 +10061,7 @@ VmaBlockMetadata_TLSF::~VmaBlockMetadata_TLSF()
 {
     if (m_FreeList)
         vma_delete_array(GetAllocationCallbacks(), m_FreeList, m_ListsCount);
-    m_GranularityHandler.Destroy(GetAllocationCallbacks());
+    m_GranularityHandler.DestroyAll(GetAllocationCallbacks());
 }
 
 void VmaBlockMetadata_TLSF::Init(VkDeviceSize size)
@@ -11751,7 +11751,7 @@ void VmaDeviceMemoryBlock::Init(
     m_pMetadata->Init(newSize);
 }
 
-void VmaDeviceMemoryBlock::Destroy(VmaAllocator allocator)
+void VmaDeviceMemoryBlock::DestroyAll(VmaAllocator allocator)
 {
     // Define macro VMA_DEBUG_LOG to receive the list of the unfreed allocations
     if (!m_pMetadata->IsEmpty())
@@ -12296,7 +12296,7 @@ VmaBlockVector::~VmaBlockVector()
 {
     for (size_t i = m_Blocks.size(); i--; )
     {
-        m_Blocks[i]->Destroy(m_hAllocator);
+        m_Blocks[i]->DestroyAll(m_hAllocator);
         vma_delete(m_hAllocator, m_Blocks[i]);
     }
 }
@@ -12676,7 +12676,7 @@ void VmaBlockVector::Free(const VmaAllocation hAllocation)
     if (pBlockToDelete != VMA_NULL)
     {
         VMA_DEBUG_LOG("    Deleted empty block #%u", pBlockToDelete->GetId());
-        pBlockToDelete->Destroy(m_hAllocator);
+        pBlockToDelete->DestroyAll(m_hAllocator);
         vma_delete(m_hAllocator, pBlockToDelete);
     }
 

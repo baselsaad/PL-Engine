@@ -4,8 +4,8 @@ project "Core"
 	cppdialect "C++17"
 	staticruntime "on"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin/Intermediate/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/Binaries/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/Intermediate/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "pch.h"
 	pchsource "src/pch.cpp"
@@ -18,8 +18,8 @@ project "Core"
 		"vendor/stb_image/**.h",
 		"vendor/stb_image/**.cpp",
 
-		"vendor/glm/glm/**.hpp",
-		"vendor/glm/glm/**.inl",
+		"vendor/glm-0.9.9.8/glm/**.hpp",
+		"vendor/glm-0.9.9.8/glm/**.inl",
 
 		"vendor/spdlog/inlcude/spdlog/spdlog.h",
 		"vendor/spdlog/inlcude/spdlog/fmt/ostr.h",
@@ -31,7 +31,7 @@ project "Core"
 
 	defines
 	{
-		"_CRT_SECURE_NO_WARNINGS"
+		"_CRT_SECURE_NO_WARNINGS" 
 	}
 
 	includedirs
@@ -72,3 +72,8 @@ project "Core"
 	    defines "RELEASE"
 		runtime "Release"
 		optimize "on"
+
+	filter "configurations:Shipping"
+		defines "SHIPPING"
+        optimize "on"
+		symbols "off"

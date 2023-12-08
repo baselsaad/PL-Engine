@@ -12,12 +12,18 @@
 #include "Vulkan/VulkanRenderer.h"
 #include "Renderer/Renderer.h"
 #include "Utilities/Colors.h"
+#include "Event/Input.h"
+#include "Utilities/DeltaTime.h"
+#include "Utilities/Timer.h"
+#include "Renderer/EditorCamera.h"
+#include "Random.h"
 
 namespace PL_Engine
 {
 	Engine* Engine::s_Instance;
 
 	Engine::Engine(/*specs*/)
+		: m_ShouldCloseWindow(false)
 	{
 		s_Instance = this;
 
@@ -25,37 +31,58 @@ namespace PL_Engine
 		data.Width = 800;
 		data.Height = 600;
 		data.Title = "PL Engine";
-		data.Vsync = true;
+		data.Vsync = false;
 
 		m_Window = MakeUnique<WindowsWindow>(data);
 
-		glfwSetWindowUserPointer(*m_Window, m_Window.get());
+		SetupEventCallbacks();
+		m_EventHandler.BindAction(EventType::ResizeWindow, this, &Engine::OnResizeWindow);
+		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
+	}
 
-		glfwSetFramebufferSizeCallback(*m_Window, [](GLFWwindow* window, int width, int height) -> void
+	static void BenchmarkBatchRenderer()
+	{
+		const glm::vec3 scale(0.45f);
+		float cord = 5.0;
+
+		for (float y = -cord; y < 5.0f; y += 0.5f)
 		{
-			Renderer::OnResizeWindow(true, width, height);
-			Engine::Get()->GetWindow()->OnResize(width, height);
-		});
+			for (float x = -cord; x < 5.0f; x += 0.5f)
+			{
+				glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
+				Renderer::DrawQuad({ x, y, 0.0f }, scale, color);
+			}
+		}
 	}
 
 	void Engine::Run()
 	{
 		Renderer::Init(RenderAPITarget::Vulkan);
 
-		constexpr glm::vec3 scale(3.0f);
-		std::srand(static_cast<unsigned int>(std::time(0)));
+		const glm::vec3 scale(1.0f);
+		DeltaTime deltaTime;
 
-		while (!m_Window->ShouldClose())
+		//test
+		//Camera editorCamera;
+		EditorCamera editorCamera(30.0f, m_Window->GetAspectRatio(), 0.1f, 1000.0f);
+		editorCamera.SetupInput(m_EventHandler);
+
+		while (!m_ShouldCloseWindow)
 		{
+			deltaTime.Update();
 			m_Window->PollEvents();
 
-			Renderer::BeginFrame();
+			editorCamera.OnUpdate(deltaTime.GetMilliSeconds());
+
+			Renderer::BeginFrame(editorCamera);
 			{
-				Renderer::DrawQuad(glm::vec3(-2.0f, 1.0f, 0.0f), scale, Colors::Blue);
-				Renderer::DrawQuad(glm::vec3(2.0f, -3.5f, 0.0f), scale, Colors::Yellow);
-				Renderer::DrawQuad(glm::vec3(3.0f, 1.0f, 0.0f), scale, Colors::Spring_Green);
-				Renderer::DrawQuad(glm::vec3(-4.0f, -3.0f, 0.0f), scale, Colors::Tan);
+				BenchmarkBatchRenderer();
+
+				Renderer::DrawQuad(glm::vec3(0.5f, 1.0f, 0.0f), scale, Colors::Spring_Green);
+				Renderer::DrawQuad(glm::vec3(0.0f, 0.0f, 0.0f), scale, Colors::Blue);
 				Renderer::DrawQuad(glm::vec3(5.0f, 3.5f, 0.0f), scale, Colors::Dark_Magenta);
+				Renderer::DrawQuad(glm::vec3(-4.0f, -3.0f, 0.0f), scale, Colors::Tan);
+				Renderer::DrawQuad(glm::vec3(2.0f, -3.5f, 0.0f), scale, Colors::Yellow);
 			}
 			Renderer::EndFrame();
 		}
@@ -65,4 +92,102 @@ namespace PL_Engine
 		Renderer::Shutdown();
 		m_Window->Close();
 	}
+
+	void Engine::SetupEventCallbacks()
+	{
+		m_EventCallback = [this](Event& e) -> void { m_EventHandler.OnEvent(e); };
+		glfwSetWindowUserPointer(*m_Window, &m_EventCallback);
+
+		// Window Close 
+		{
+			auto callback = [](GLFWwindow* window)
+			{
+				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window); //  eventCallback = m_EventCallback
+				CloseWindowEvent e;
+				eventCallback(e);
+			};
+
+			glfwSetWindowCloseCallback(*m_Window, callback);
+		}
+
+		// Window Resize
+		{
+			auto callback = [](GLFWwindow* window, int width, int height)
+			{
+				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				ResizeWindowEvent event(width, height);
+				eventCallback(event);
+			};
+
+			glfwSetWindowSizeCallback(*m_Window, callback);
+			//glfwSetFramebufferSizeCallback(*m_Window, callback); later for editor
+		}
+
+		// Mouse Buttons
+		{
+			auto callback = [](GLFWwindow* window, int button, int action, int mods)
+			{
+				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				double outX, outY;
+				glfwGetCursorPos(window, &outX, &outY);
+
+				switch (action)
+				{
+					case GLFW_PRESS:
+					{
+						MouseButtonPressedEvent event(button, outX, outY);
+						eventCallback(event);
+						break;
+					}
+					case GLFW_RELEASE:
+					{
+						MouseButtonReleasedEvent event(button, outX, outY);
+						eventCallback(event);
+						break;
+					}
+				}
+			};
+
+			glfwSetMouseButtonCallback(*m_Window, callback);
+		}
+
+		// Mouse Move
+		{
+			auto callback = [](GLFWwindow* window, double x, double y)
+			{
+				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+
+				MouseMoveEvent event((float)x, (float)y);
+				eventCallback(event);
+			};
+
+			glfwSetCursorPosCallback(*m_Window, callback);
+		}
+
+		// Mouse Scroll
+		{
+			auto callback = [](GLFWwindow* window, double x, double y)
+			{
+				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+
+				MouseScrolledEvent event((float)x, (float)y);
+				eventCallback(event);
+			};
+
+			glfwSetScrollCallback(*m_Window, callback);
+		}
+
+	}
+
+	void Engine::OnResizeWindow(const ResizeWindowEvent& event)
+	{
+		Renderer::OnResizeWindow(true, event.GetWidth(), event.GetHeight());
+		Engine::Get()->GetWindow()->OnResize(event.GetWidth(), event.GetHeight());
+	}
+
+	void Engine::OnCloseWindow(const CloseWindowEvent& event)
+	{
+		m_ShouldCloseWindow = true;
+	}
+
 }

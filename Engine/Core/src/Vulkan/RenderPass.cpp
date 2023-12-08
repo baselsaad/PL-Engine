@@ -75,5 +75,4 @@ namespace PL_Engine
 	{
 		vkCmdEndRenderPass(currentCommandBuffer);
 	}
-
 }

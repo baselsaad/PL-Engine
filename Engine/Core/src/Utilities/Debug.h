@@ -4,7 +4,7 @@
 #include "Utilities/Log.h"
 
 #if _MSC_VER
-#define DEBUG_BREAK __debugbreak
+#define DEBUG_BREAK() __debugbreak();
 #else
 #define DEBUG_BREAK throw std::exception
 #endif
@@ -24,7 +24,7 @@
 	if (res != VK_SUCCESS)													\
 	{																		\
 		Debug::LogError("Fail to Create {0} {1}", __FILE__, __LINE__);		\
-		DEBUG_BREAK();														\
+		DEBUG_BREAK()														\
 	}																		\
 }
 #else

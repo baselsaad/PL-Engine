@@ -45,11 +45,4 @@ namespace PL_Engine
 		allocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, m_CommandBuffers.data()));
 	}
-
-	void CommandBuffer::SubmitCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const SharedPtr<RenderPass>& renderpass, 
-		const SharedPtr<VulkanSwapChain>& swapChain, const SharedPtr<PipeLine>& graphicsPipline, 
-		const SharedPtr<VulkanIndexBuffer>& indexBuffer, const SharedPtr<VulkanVertexBuffer>& vertexBuffer, uint32_t indexBufferCount)
-	{
-	}
-
 }

@@ -5,18 +5,13 @@
 
 namespace PL_Engine
 {
-	class Window;
-
 	class Input
 	{
 	public:
-		static bool IsMouseButtonDown(const MouseButtonKey& key);
-		static bool IsMouseButtonUp(const MouseButtonKey& key);
+		static bool IsKeyPressed(const KeyCode key);
+		static bool IsMouseButtonDown(const MouseButtonKey key);
+		static bool IsMouseButtonUp(const MouseButtonKey key);
 		static glm::vec2 GetMousePosition();
-
-	private:
-		static void Init(Window* window);
-		friend class Engine;
 	};
 
 }

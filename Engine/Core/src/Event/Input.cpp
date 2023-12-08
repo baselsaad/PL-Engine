@@ -1,41 +1,47 @@
 #include "pch.h"
 #include "Input.h"
 #include "Core/Window.h"
+#include "Core/Engine.h"
 
 namespace PL_Engine
 {
-	static Window* s_Window;
+	static Window* window;
 
-	void Input::Init(Window* window)
+	bool Input::IsKeyPressed(const KeyCode key)
 	{
-		ASSERT(s_Window == nullptr, "Init was called before!!!");
+		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
+		ASSERT(window, "No valid window!!");
 
-		s_Window = window;
-	}
-
-	bool Input::IsMouseButtonDown(const MouseButtonKey& key)
-	{
-		ASSERT(s_Window, "No valid window!!");
-
-		auto state = glfwGetMouseButton(*s_Window, (uint32_t)key);
+		auto state = glfwGetKey(*window, static_cast<int32_t>(key));
 		return state == GLFW_PRESS;
 	}
 
-	bool Input::IsMouseButtonUp(const MouseButtonKey& key)
+	bool Input::IsMouseButtonDown(const MouseButtonKey key)
 	{
-		ASSERT(s_Window, "No valid window!!");
+		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
+		ASSERT(window, "No valid window!!");
 
-		auto state = glfwGetMouseButton(*s_Window, (uint32_t)key);
+		auto state = glfwGetMouseButton(*window, (uint32_t)key);
+		return state == GLFW_PRESS;
+	}
+
+	bool Input::IsMouseButtonUp(const MouseButtonKey key)
+	{
+		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
+		ASSERT(window, "No valid window!!");
+
+		auto state = glfwGetMouseButton(*window, (uint32_t)key);
 		return state == GLFW_RELEASE;
 	}
 
 	glm::vec2 Input::GetMousePosition()
 	{
-		ASSERT(s_Window, "No valid window!!");
+		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
+		ASSERT(window, "No valid window!!");
 
 		double xPos, yPos;
-		glfwGetCursorPos(*s_Window, &xPos, &yPos);
+		glfwGetCursorPos(*window, &xPos, &yPos);
 
-		return { (float)xPos, s_Window->GetWindowHeight() - (float)yPos };
+		return { (float)xPos, window->GetWindowHeight() - (float)yPos };
 	}
 }

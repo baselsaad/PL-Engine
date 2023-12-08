@@ -6,7 +6,8 @@ workspace "PL-Engine"
 	configurations
 	{
 		"Debug",
-		"Release"
+		"Release",
+        "Shipping"
 	}
 	
 	flags
@@ -14,14 +15,14 @@ workspace "PL-Engine"
 		"MultiProcessorCompile"
 	}
 
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.platform}"
 
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
 -- Include directories relative 
 IncludeDir = {}
 IncludeDir["GLFW"] = "%{wks.location}/Engine/Core/vendor/GLFW/include"
-IncludeDir["glm"] =  "%{wks.location}/Engine/Core/vendor/glm"
+IncludeDir["glm"] =  "%{wks.location}/Engine/Core/vendor/glm-0.9.9.8/"
 IncludeDir["stb_image"] = "%{wks.location}/Engine/Core/vendor/stb_image"
 IncludeDir["imgui"] = "%{wks.location}/Engine/Core/vendor/imgui"
 IncludeDir["spdlog"] = "%{wks.location}/Engine/Core/vendor/spdlog/include"
@@ -45,9 +46,9 @@ newaction {
     description = "Remove all binaries and intermediate binaries, and vs files.",
     execute = function()
         print("Removing binaries")
-        os.rmdir("./bin")
+        os.rmdir("./Binaries")
         print("Removing intermediate binaries")
-        os.rmdir("./bin-int")
+        os.rmdir("./Intermediate")
         print("Removing project files")
         os.rmdir("./.vs")
         os.remove("**.sln")

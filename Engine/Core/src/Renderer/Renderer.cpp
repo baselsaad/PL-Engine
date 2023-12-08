@@ -8,11 +8,14 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VertexBuffer.h"
 #include "Utilities/Colors.h"
+#include "EditorCamera.h"
 
 namespace PL_Engine
 {
 	SharedPtr<IRenderAPI> Renderer::s_RenderAPI;
 	BatchRenderer* Renderer::s_BatchRenderer;
+	glm::mat4 Renderer::s_Projection;
+	PL_Engine::RenderStats Renderer::s_RenderStats;
 
 	void Renderer::Init(RenderAPITarget target)
 	{
@@ -41,23 +44,25 @@ namespace PL_Engine
 		s_RenderAPI->Shutdown();
 	}
 
-	void Renderer::BeginFrame()
+	void Renderer::BeginFrame(const Camera& camera)
 	{
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
+		s_Projection = camera.GetViewProjection();
+
 		s_RenderAPI->BeginFrame();
-		s_BatchRenderer->StartNewBatch();
+		s_BatchRenderer->Begin();
 	}
 
 	void Renderer::Flush()
 	{
+		int currentFrame = VulkanAPI::GetCurrentFrame();
+		
 		// Quads
 		s_BatchRenderer->BindCurrentBatch();
-		s_RenderAPI->DrawQuad(s_BatchRenderer->GetVertexBuffer(), s_BatchRenderer->GetIndexBuffer(), s_BatchRenderer->GetIndexCount());
+		s_RenderAPI->DrawQuad(s_BatchRenderer->GetVertexBuffer(), s_BatchRenderer->GetIndexBuffer(), s_BatchRenderer->GetIndexCount(), s_Projection);
 
-		// Circle
-
-		// Lines
+		s_RenderStats.DrawCalls++;
 	}
 
 	void Renderer::EndFrame()
@@ -66,17 +71,19 @@ namespace PL_Engine
 
 		Flush();
 		s_RenderAPI->EndFrame();
+		s_BatchRenderer->End();
+
+		s_RenderStats.Reset();
 	}
 
 	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)
 	{
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
-		
-		if (s_BatchRenderer->ShouldDrawBatch())
+
+		if (s_BatchRenderer->IsBatchFull())
 		{
 			Flush();
-			s_BatchRenderer->StartNewBatch();
-			return;
+			s_BatchRenderer->FindOrCreateNewBatch();
 		}
 
 		glm::mat4 transform =
@@ -85,6 +92,7 @@ namespace PL_Engine
 			* glm::scale(glm::mat4(1.0f), scale);
 
 		s_BatchRenderer->BatchNewQuadVertices(transform, color);
+		s_RenderStats.Quads++;
 	}
 
 	void Renderer::SubmitCommand(const std::function<void()>& command)

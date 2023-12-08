@@ -1,143 +1,309 @@
 #pragma once
 #include <GLFW/glfw3.h>
 
-enum class MouseButtonKey : int
+namespace PL_Engine
 {
-	Left = GLFW_MOUSE_BUTTON_LEFT, Right = GLFW_MOUSE_BUTTON_RIGHT, UnSupported
-};
 
-enum class EventType
-{
-	CloseWindow = 0,
-	ResizeWindow,
-	MouseButtonEvent,
-	MouseButtonPressed,
-	MouseButtonReleased,
-	MouseMove
-};
 
-class Event
-{
-public:
-	virtual EventType GetEventType() = 0;
-};
 
-class CloseWindowEvent : public Event
-{
-	virtual EventType GetEventType() override
+	enum class MouseButtonKey : uint16_t
 	{
-		return EventType::CloseWindow;
-	}
-};
+		Left = GLFW_MOUSE_BUTTON_LEFT, Right = GLFW_MOUSE_BUTTON_RIGHT, Middle = GLFW_MOUSE_BUTTON_MIDDLE, UnSupported
+	};
 
-class ResizeWindowEvent : public Event
-{
-
-public:
-	ResizeWindowEvent(int width, int height)
-		: m_Width(width), m_Height(height)
+	enum class KeyCode : uint16_t
 	{
-	}
+		// From glfw3.h
+		Space = 32,
+		Apostrophe = 39, /* ' */
+		Comma = 44, /* , */
+		Minus = 45, /* - */
+		Period = 46, /* . */
+		Slash = 47, /* / */
 
-	virtual EventType GetEventType() override
+		D0 = 48, /* 0 */
+		D1 = 49, /* 1 */
+		D2 = 50, /* 2 */
+		D3 = 51, /* 3 */
+		D4 = 52, /* 4 */
+		D5 = 53, /* 5 */
+		D6 = 54, /* 6 */
+		D7 = 55, /* 7 */
+		D8 = 56, /* 8 */
+		D9 = 57, /* 9 */
+
+		Semicolon = 59, /* ; */
+		Equal = 61, /* = */
+
+		A = 65,
+		B = 66,
+		C = 67,
+		D = 68,
+		E = 69,
+		F = 70,
+		G = 71,
+		H = 72,
+		I = 73,
+		J = 74,
+		K = 75,
+		L = 76,
+		M = 77,
+		N = 78,
+		O = 79,
+		P = 80,
+		Q = 81,
+		R = 82,
+		S = 83,
+		T = 84,
+		U = 85,
+		V = 86,
+		W = 87,
+		X = 88,
+		Y = 89,
+		Z = 90,
+
+		LeftBracket = 91,  /* [ */
+		Backslash = 92,  /* \ */
+		RightBracket = 93,  /* ] */
+		GraveAccent = 96,  /* ` */
+
+		World1 = 161, /* non-US #1 */
+		World2 = 162, /* non-US #2 */
+
+		/* Function keys */
+		Escape = 256,
+		Enter = 257,
+		Tab = 258,
+		Backspace = 259,
+		Insert = 260,
+		Delete = 261,
+		Right = 262,
+		Left = 263,
+		Down = 264,
+		Up = 265,
+		PageUp = 266,
+		PageDown = 267,
+		Home = 268,
+		End = 269,
+		CapsLock = 280,
+		ScrollLock = 281,
+		NumLock = 282,
+		PrintScreen = 283,
+		Pause = 284,
+		F1 = 290,
+		F2 = 291,
+		F3 = 292,
+		F4 = 293,
+		F5 = 294,
+		F6 = 295,
+		F7 = 296,
+		F8 = 297,
+		F9 = 298,
+		F10 = 299,
+		F11 = 300,
+		F12 = 301,
+		F13 = 302,
+		F14 = 303,
+		F15 = 304,
+		F16 = 305,
+		F17 = 306,
+		F18 = 307,
+		F19 = 308,
+		F20 = 309,
+		F21 = 310,
+		F22 = 311,
+		F23 = 312,
+		F24 = 313,
+		F25 = 314,
+
+		/* Keypad */
+		KP0 = 320,
+		KP1 = 321,
+		KP2 = 322,
+		KP3 = 323,
+		KP4 = 324,
+		KP5 = 325,
+		KP6 = 326,
+		KP7 = 327,
+		KP8 = 328,
+		KP9 = 329,
+		KPDecimal = 330,
+		KPDivide = 331,
+		KPMultiply = 332,
+		KPSubtract = 333,
+		KPAdd = 334,
+		KPEnter = 335,
+		KPEqual = 336,
+
+		LeftShift = 340,
+		LeftControl = 341,
+		LeftAlt = 342,
+		LeftSuper = 343,
+		RightShift = 344,
+		RightControl = 345,
+		RightAlt = 346,
+		RightSuper = 347,
+		Menu = 348
+	};
+
+
+	enum class EventType
 	{
-		return EventType::ResizeWindow;
-	}
+		CloseWindow = 0,
+		ResizeWindow,
+		MouseButton,
+		MouseButtonPressed,
+		MouseButtonReleased,
+		MouseMiddleButtone,
+		MouseScrolled,
+		MouseMove
+	};
 
-	inline int GetWidth() const { return m_Width; }
-	inline int GetHeight() const { return m_Height; }
-
-private:
-	int m_Width, m_Height;
-
-};
-
-class MouseButtonEvent : public Event
-{
-public:
-	using Super = MouseButtonEvent;
-
-	MouseButtonEvent(int button, double x, double y)
-		: m_XPosition(x)
-		, m_YPosition(y)
+	class Event
 	{
-		switch (button)
+	public:
+		virtual EventType GetEventType() = 0;
+	};
+
+	class CloseWindowEvent : public Event
+	{
+		virtual EventType GetEventType() override
 		{
-			case GLFW_MOUSE_BUTTON_LEFT:	m_ButtonType = MouseButtonKey::Left;			break;
-			case GLFW_MOUSE_BUTTON_RIGHT:	m_ButtonType = MouseButtonKey::Right;			break;
-			default:						m_ButtonType = MouseButtonKey::UnSupported;	break;
+			return EventType::CloseWindow;
 		}
-	}
+	};
 
-	virtual EventType GetEventType() override
+	class ResizeWindowEvent : public Event
 	{
-		return EventType::MouseButtonEvent;
-	}
 
-	inline MouseButtonKey GetButtonType() { return m_ButtonType; }
+	public:
+		ResizeWindowEvent(int width, int height)
+			: m_Width(width), m_Height(height)
+		{
+		}
 
-	inline double GetXPosition() const { return m_XPosition; }
+		virtual EventType GetEventType() override
+		{
+			return EventType::ResizeWindow;
+		}
 
-	// from BOTTOM_LEFT not TOP_LEFT
-	inline double GetYPosition() const { return m_YPosition; } 
+		inline int GetWidth() const { return m_Width; }
+		inline int GetHeight() const { return m_Height; }
 
-private:
-	MouseButtonKey m_ButtonType;
-	double m_XPosition;
-	double m_YPosition;
-};
+	private:
+		int m_Width, m_Height;
 
-class MouseButtonPressedEvent : public MouseButtonEvent
-{
-public:
-	MouseButtonPressedEvent(int btn, double x, double y)
-		: Super(btn, x, y)
+	};
+
+	class MouseButtonEvent : public Event
 	{
-	}
+	public:
+		using Super = MouseButtonEvent;
 
-	virtual EventType GetEventType() override
+		MouseButtonEvent(int button, double x, double y)
+			: m_XPosition(x)
+			, m_YPosition(y)
+		{
+			switch (button)
+			{
+				case GLFW_MOUSE_BUTTON_LEFT:	m_ButtonType = MouseButtonKey::Left;			break;
+				case GLFW_MOUSE_BUTTON_RIGHT:	m_ButtonType = MouseButtonKey::Right;			break;
+				case GLFW_MOUSE_BUTTON_MIDDLE:	m_ButtonType = MouseButtonKey::Middle;			break;
+				default:						m_ButtonType = MouseButtonKey::UnSupported;		break;
+			}
+		}
+
+		virtual EventType GetEventType() override
+		{
+			return EventType::MouseButton;
+		}
+
+		inline MouseButtonKey GetButtonType() { return m_ButtonType; }
+
+		inline double GetXPosition() const { return m_XPosition; }
+
+		// from BOTTOM_LEFT not TOP_LEFT
+		inline double GetYPosition() const { return m_YPosition; }
+
+	private:
+		MouseButtonKey m_ButtonType;
+		double m_XPosition;
+		double m_YPosition;
+	};
+
+	class MouseButtonPressedEvent : public MouseButtonEvent
 	{
-		return EventType::MouseButtonPressed;
-	}
-};
+	public:
+		MouseButtonPressedEvent(int btn, double x, double y)
+			: Super(btn, x, y)
+		{
+		}
 
-class MouseButtonReleasedEvent : public MouseButtonEvent
-{
+		virtual EventType GetEventType() override
+		{
+			return EventType::MouseButtonPressed;
+		}
+	};
 
-public:
-	MouseButtonReleasedEvent(int btn, double x, double y)
-		: Super(btn, x, y)
+	class MouseButtonReleasedEvent : public MouseButtonEvent
 	{
-	}
 
-	virtual EventType GetEventType() override
+	public:
+		MouseButtonReleasedEvent(int btn, double x, double y)
+			: Super(btn, x, y)
+		{
+		}
+
+		virtual EventType GetEventType() override
+		{
+			return EventType::MouseButtonReleased;
+		}
+	};
+
+
+	class MouseMoveEvent : public Event
 	{
-		return EventType::MouseButtonReleased;
-	}
-};
 
+	public:
+		MouseMoveEvent(double xPos, double yPos)
+			: m_XPosition(xPos)
+			, m_YPosition(yPos)
+		{
+		}
 
-class MouseMoveEvent : public Event
-{
+		inline double GetXPosition() const { return m_XPosition; }
+		// from BOTTOM_LEFT not TOP_LEFT
+		inline double GetYPosition() const { m_YPosition; }
 
-public:
-	MouseMoveEvent(double xPos, double yPos)
-		: m_XPosition(xPos)
-		, m_YPosition(yPos)
+		virtual EventType GetEventType() override
+		{
+			return EventType::MouseMove;
+		}
+
+	private:
+		double m_XPosition;
+		double m_YPosition;
+	};
+
+	class MouseScrolledEvent : public Event
 	{
-	}
+	public:
+		MouseScrolledEvent(double xPos, double yPos)
+			: m_XPosition(xPos)
+			, m_YPosition(yPos)
+		{
+		}
 
-	inline double GetXPosition() const { return m_XPosition; }
-	// from BOTTOM_LEFT not TOP_LEFT
-	inline double GetYPosition() const { m_YPosition; } 
+		float GetXOffset() const { return m_XPosition; }
+		float GetYOffset() const { return m_YPosition; }
 
-	virtual EventType GetEventType() override
-	{
-		return EventType::MouseMove;
-	}
+		virtual EventType GetEventType() override
+		{
+			return EventType::MouseScrolled;
+		}
 
-private:
-	double m_XPosition;
-	double m_YPosition;
-};
+	private:
+		float m_XPosition, m_YPosition;
+	};
 
+}

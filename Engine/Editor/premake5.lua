@@ -1,11 +1,12 @@
+-- PL-Engine Editor
 project "Editor"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
 	staticruntime "on"
 
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/bin/Intermediate/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/Binaries/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/Intermediate/" .. outputdir .. "/%{prj.name}")
 
 	files
 	{
@@ -39,13 +40,16 @@ project "Editor"
 		systemversion "latest"
 
 	filter "configurations:Debug"
-		disablewarnings { "4244" }
 		defines "DEBUG"
 		runtime "Debug"
 		symbols "on"
 
 	filter "configurations:Release"
-		disablewarnings { "4244" }
 		defines "RELEASE"
 		runtime "Release"
         optimize "on"
+
+	filter "configurations:Shipping"
+		defines "SHIPPING"
+        optimize "on"
+		symbols "off"
