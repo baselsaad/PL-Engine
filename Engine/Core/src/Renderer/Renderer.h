@@ -17,6 +17,7 @@ namespace PL_Engine
 	{
 		int Quads = 0;
 		int DrawCalls = 0;
+		int VertexBufferCount = 0;
 
 		void Reset()
 		{
@@ -39,6 +40,8 @@ namespace PL_Engine
 		static void SubmitCommand(const std::function<void()>& command);
 		static void WaitForIdle();
 		static void OnResizeWindow(bool resize = false, int width = 0, int height = 0);
+
+		static RenderStats& GetStats() { return s_RenderStats; }
 	
 	private:
 		static void Flush();

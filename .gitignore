@@ -56,4 +56,6 @@
 
 
 bin/*
+Binaries/*
+Intermediate/*
 *.spv

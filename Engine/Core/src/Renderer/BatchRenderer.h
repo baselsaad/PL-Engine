@@ -11,18 +11,10 @@ namespace PL_Engine
 
 	struct QuadBatch
 	{
-		static const uint32_t s_MaxQuads = 10000;
-		static const uint32_t s_MaxVertices = s_MaxQuads * 4;
-
-		int frameID = 0;//for debug
 		SharedPtr<VulkanVertexBuffer> VertexBuffer;
-		bool IsFull = false;
+		int FrameIndex = 0; // only for debug
 
-		QuadBatch(int frameIndex)
-			: frameID(frameIndex)
-		{
-			VertexBuffer = MakeShared<VulkanVertexBuffer>(s_MaxVertices * sizeof(QuadVertex));
-		}
+		QuadBatch(int frameIndex = 0);
 	};
 
 	class BatchRenderer
@@ -33,29 +25,45 @@ namespace PL_Engine
 
 		void Begin();
 		void End();
+		void AddQuadToBatch(const glm::mat4& transform, const glm::vec3& color);
+		void BindCurrentQuadBatch();
+		void FindOrCreateNewQuadBatch();
 
-		void FindOrCreateNewBatch();
-		void BatchNewQuadVertices(const glm::mat4& transform, const glm::vec3& color);
-		void BindCurrentBatch();
-
-		inline bool IsBatchFull() { return m_QuadIndexCount >= s_MaxIndices; }
 		const SharedPtr<VulkanVertexBuffer>& GetVertexBuffer(); 
-		inline const SharedPtr<VulkanIndexBuffer>& GetIndexBuffer() { return m_QuadIndexBuffer; }
-		inline uint32_t GetIndexCount() { return m_QuadIndexCount; }
+
+		inline bool ShouldDrawCurrentBatch() { return m_QuadBatchingData.IndexCount >= m_QuadBatchingData.s_MaxIndices; };
+		inline const SharedPtr<VulkanIndexBuffer>& GetIndexBuffer() { return m_QuadBatchingData.IndexBuffer; }
+		inline uint32_t GetIndexCount() { return m_QuadBatchingData.IndexCount; }
 
 	private:
-		static const uint32_t s_MaxIndices = QuadBatch::s_MaxQuads * 6;
+		static constexpr int s_FramesInFlight = VulkanAPI::GetMaxFramesInFlight();
 
-		std::vector<QuadVertex*> m_QuadVertexBufferBase;
-		QuadVertex* m_QuadVertexBufferPtr = nullptr;
+		// can use the same for Quads, Circle etc ...
+		struct BatchingData
+		{
+			static const uint32_t s_MaxQuads = 10000;
+			static const uint32_t s_MaxVertices = s_MaxQuads * 4;
+			static const uint32_t s_MaxIndices = s_MaxQuads * 6;
 
-		SharedPtr<VulkanIndexBuffer> m_QuadIndexBuffer;
+			std::vector<QuadVertex*> VertexBufferBase;
+			QuadVertex* VertexBufferPtr = nullptr;
 
-		std::vector<QuadBatch> m_Batches[VulkanAPI::GetMaxFramesInFlight()]; 
-		int m_CurrentQuadBatch[VulkanAPI::GetMaxFramesInFlight()];
+			SharedPtr<VulkanIndexBuffer> IndexBuffer;
+			std::vector<QuadBatch> BatchesArray[s_FramesInFlight]; // vector of QuadBatch for every frame 
 
-		uint32_t m_QuadIndexCount = 0;
-		glm::vec4 m_QuadVertexPositions[4];
+			uint32_t CurrentBatch = 0;
+			uint32_t IndexCount = 0;
+
+			glm::vec4 QuadVertexDefaultPositions[4] = 
+			{
+				glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f),
+				glm::vec4( 0.5f, -0.5f, 0.0f, 1.0f),
+				glm::vec4( 0.5f,  0.5f, 0.0f, 1.0f),
+				glm::vec4(-0.5f,  0.5f, 0.0f, 1.0f)
+			};
+
+		} m_QuadBatchingData;
+
 
 		friend struct QuadBatch;
 	};

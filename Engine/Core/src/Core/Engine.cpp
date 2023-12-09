@@ -40,10 +40,11 @@ namespace PL_Engine
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
 	}
 
-	static void BenchmarkBatchRenderer()
+	
+	static void BenchmarkBatchRenderer(EditorCamera& camera)
 	{
+		float cord = camera.GetDistance();
 		const glm::vec3 scale(0.45f);
-		float cord = 5.0;
 
 		for (float y = -cord; y < 5.0f; y += 0.5f)
 		{
@@ -76,7 +77,7 @@ namespace PL_Engine
 
 			Renderer::BeginFrame(editorCamera);
 			{
-				BenchmarkBatchRenderer();
+				//BenchmarkBatchRenderer(editorCamera);
 
 				Renderer::DrawQuad(glm::vec3(0.5f, 1.0f, 0.0f), scale, Colors::Spring_Green);
 				Renderer::DrawQuad(glm::vec3(0.0f, 0.0f, 0.0f), scale, Colors::Blue);

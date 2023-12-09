@@ -38,9 +38,15 @@ namespace PL_Engine
 
 	void VulkanVertexBuffer::SetData(QuadVertex* data, uint32_t size, uint32_t offset)
 	{
-		VulkanMemoryAllocator allocator("VulkanVertexBuffer");
-		uint8_t* pData = allocator.MapMemory<uint8_t>(m_VmaAllocation);
-		memcpy(pData, (uint8_t*)data + offset, size);
-		allocator.UnmapMemory(m_VmaAllocation);
+		auto command = [data, size, offset, this]()
+		{
+			VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+			uint8_t* pData = allocator.MapMemory<uint8_t>(m_VmaAllocation);
+			memcpy(pData, (uint8_t*)data + offset, size);
+			allocator.UnmapMemory(m_VmaAllocation);
+		};
+
+		//Renderer::SubmitCommand(command);
+		command();
 	}
 }

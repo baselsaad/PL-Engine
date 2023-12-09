@@ -59,7 +59,7 @@ namespace PL_Engine
 		int currentFrame = VulkanAPI::GetCurrentFrame();
 		
 		// Quads
-		s_BatchRenderer->BindCurrentBatch();
+		s_BatchRenderer->BindCurrentQuadBatch();
 		s_RenderAPI->DrawQuad(s_BatchRenderer->GetVertexBuffer(), s_BatchRenderer->GetIndexBuffer(), s_BatchRenderer->GetIndexCount(), s_Projection);
 
 		s_RenderStats.DrawCalls++;
@@ -73,6 +73,9 @@ namespace PL_Engine
 		s_RenderAPI->EndFrame();
 		s_BatchRenderer->End();
 
+		//std::cout << "Quads: " << s_RenderStats.Quads << ", DrawCalls: " << s_RenderStats.DrawCalls 
+		//	<< ", VertexBufferCount: " << s_RenderStats.VertexBufferCount << " * 3" << "\n";
+
 		s_RenderStats.Reset();
 	}
 
@@ -80,10 +83,10 @@ namespace PL_Engine
 	{
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		if (s_BatchRenderer->IsBatchFull())
+		if (s_BatchRenderer->ShouldDrawCurrentBatch())
 		{
 			Flush();
-			s_BatchRenderer->FindOrCreateNewBatch();
+			s_BatchRenderer->FindOrCreateNewQuadBatch();
 		}
 
 		glm::mat4 transform =
@@ -91,7 +94,7 @@ namespace PL_Engine
 			* glm::mat4(1.0f)
 			* glm::scale(glm::mat4(1.0f), scale);
 
-		s_BatchRenderer->BatchNewQuadVertices(transform, color);
+		s_BatchRenderer->AddQuadToBatch(transform, color);
 		s_RenderStats.Quads++;
 	}
 
