@@ -8,7 +8,7 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VertexBuffer.h"
 #include "Utilities/Colors.h"
-#include "EditorCamera.h"
+#include "Utilities/Timer.h"
 
 namespace PL_Engine
 {
@@ -46,9 +46,11 @@ namespace PL_Engine
 
 	void Renderer::BeginFrame(const Camera& camera)
 	{
+		SCOPE_TIMER();
+
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		s_Projection = camera.GetViewProjection();
+		s_Projection = camera.GetViewProjectionMatrix();
 
 		s_RenderAPI->BeginFrame();
 		s_BatchRenderer->Begin();
@@ -56,6 +58,8 @@ namespace PL_Engine
 
 	void Renderer::Flush()
 	{
+		SCOPE_TIMER();
+
 		int currentFrame = VulkanAPI::GetCurrentFrame();
 		
 		// Quads
@@ -67,6 +71,8 @@ namespace PL_Engine
 
 	void Renderer::EndFrame()
 	{
+		SCOPE_TIMER();
+
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		Flush();
@@ -74,15 +80,16 @@ namespace PL_Engine
 		s_BatchRenderer->End();
 
 		//std::cout << "Quads: " << s_RenderStats.Quads << ", DrawCalls: " << s_RenderStats.DrawCalls 
-		//	<< ", VertexBufferCount: " << s_RenderStats.VertexBufferCount << " * 3" << "\n";
+		//	<< ", VertexBufferCount: " << s_RenderStats.VertexBufferCount << " * 3\n";
 
 		s_RenderStats.Reset();
 	}
 
 	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)
 	{
-		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
+		SCOPE_TIMER();
 
+		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 		if (s_BatchRenderer->ShouldDrawCurrentBatch())
 		{
 			Flush();

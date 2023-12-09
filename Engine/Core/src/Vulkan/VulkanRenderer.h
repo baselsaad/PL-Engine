@@ -21,7 +21,7 @@ namespace PL_Engine
 		virtual void BeginFrame() override;
 		virtual void EndFrame() override;
 
-		virtual void DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount, const glm::mat4& projection) override;
+		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) override;
 		
 		virtual void WaitForIdle() override;
 		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) override;

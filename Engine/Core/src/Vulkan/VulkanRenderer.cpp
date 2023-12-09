@@ -15,6 +15,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "glm/gtx/quaternion.hpp"
+#include "Utilities/Timer.h"
 
 namespace PL_Engine
 {
@@ -110,7 +111,7 @@ namespace PL_Engine
 		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_CommandBuffer); //Move later the main loop 
 	}
 
-	void VulkanAPI::DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount, const glm::mat4& projection)
+	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
 		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
 		{
@@ -135,9 +136,12 @@ namespace PL_Engine
 	{
 		for (auto& func : m_Commands)
 		{
-			func();
+			if (func)
+				func();
 		}
+
 		m_Commands.clear();
+		//m_Commands.resize(100);
 	}
 
 }

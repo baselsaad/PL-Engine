@@ -35,6 +35,12 @@ namespace PL_Engine
 		}
 
 		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
+		
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+		m_DeviceName = properties.deviceName;
+		m_Vendor = properties.vendorID;
+		m_DriverVersion = properties.driverVersion;
 	}
 
 	QueueFamilyIndices VulkanPhysicalDevice::FindQueueFamilies()

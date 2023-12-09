@@ -27,8 +27,15 @@ namespace PL_Engine
 		inline VkPhysicalDevice GetVkPhysicalDevice() { return m_PhysicalDevice; }
 		inline const std::vector<const char*>& GetVulkanDeviceExtensions() const { return m_DeviceExtensions; }
 
+		inline uint32_t GetVendor() const { return m_Vendor; }
+		inline uint32_t GetDriverVersion() const { return m_DriverVersion; }
+		inline const std::string& GetDeviceName() const { return m_DeviceName; }
+
 	private:
 		VkPhysicalDevice m_PhysicalDevice;
+		std::string m_DeviceName;
+		uint32_t m_Vendor;
+		uint32_t m_DriverVersion;
 
 		const std::vector<const char*> m_DeviceExtensions =
 		{

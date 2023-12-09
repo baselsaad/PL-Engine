@@ -6,6 +6,7 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/VulkanContext.h"
 #include "Renderer.h"
+#include "Utilities/Timer.h"
 
 namespace PL_Engine
 {
@@ -22,9 +23,6 @@ namespace PL_Engine
 			m_QuadBatchingData.BatchesArray[i].push_back(defaultBatch);
 			m_QuadBatchingData.CurrentBatch = 0;
 		}
-
-		Renderer::GetStats().VertexBufferCount++;
-
 
 		uint32_t* quadIndices = new uint32_t[m_QuadBatchingData.s_MaxIndices];
 		uint32_t offset = 0;
@@ -82,12 +80,12 @@ namespace PL_Engine
 			for (int i = m_QuadBatchingData.CurrentBatch + 1; i < m_QuadBatchingData.BatchesArray[currentFrame].size(); i++)
 			{
 				m_QuadBatchingData.BatchesArray[currentFrame].at(i).VertexBuffer->DestroyBuffer();
-				if (currentFrame == 0)
-					Renderer::GetStats().VertexBufferCount--;
 			}
 
 			m_QuadBatchingData.BatchesArray[currentFrame].resize(m_QuadBatchingData.CurrentBatch + 1);
 		}
+
+		Renderer::GetStats().VertexBufferCount = m_QuadBatchingData.BatchesArray[currentFrame].size();
 	}
 
 	void BatchRenderer::FindOrCreateNewQuadBatch()
@@ -98,18 +96,17 @@ namespace PL_Engine
 		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[VulkanAPI::GetCurrentFrame()];
 
 		m_QuadBatchingData.CurrentBatch++;
-		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size())
+		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size()) // currentbatch == size --> we do not use other batches
 		{
 			QuadBatch newBatch(currentFrame);
 			m_QuadBatchingData.BatchesArray[currentFrame].push_back(newBatch);
-
-			if (currentFrame == 0)
-				Renderer::GetStats().VertexBufferCount++;
 		}
 	}
 
 	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec3& color)
 	{
+		SCOPE_TIMER();
+
 		constexpr size_t quadVertexCount = 4;
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{

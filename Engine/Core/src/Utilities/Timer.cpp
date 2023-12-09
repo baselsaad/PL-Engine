@@ -14,13 +14,13 @@ Timer::~Timer()
 	Debug::Info("{0}: {1} ms", m_Name, ElapsedTimeInMili());
 }
 
-void Timer::StartTimer() const
+void Timer::StartTimer() 
 {
 	m_Start = std::chrono::high_resolution_clock::now();
 	m_IsTimerStarted = true;
 }
 
-void Timer::StopTimer() const
+void Timer::StopTimer() 
 {
 	m_End = std::chrono::high_resolution_clock::now();
 	ASSERT(m_IsTimerStarted, "You have to start the timer first!");

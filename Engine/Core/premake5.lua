@@ -26,7 +26,9 @@ project "Core"
 		"vendor/spdlog/inlcude/spdlog/sinks/stdout_color_sinks.h",
 		
 		"vendor/VulkanMemoryAllocator-3.0.1/include/**.h",
-		"vendor/VulkanMemoryAllocator-3.0.1/include/**.cpp"
+		"vendor/VulkanMemoryAllocator-3.0.1/include/**.cpp",
+
+		"vendor/Instrumentation/*.h"
 	}
 
 	defines

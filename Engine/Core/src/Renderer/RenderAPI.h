@@ -17,7 +17,7 @@ namespace PL_Engine
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
 
-		virtual void DrawQuad(SharedPtr<VulkanVertexBuffer> vertexBuffer, SharedPtr<VulkanIndexBuffer> indexBuffer, uint32_t indexCount, const glm::mat4& projection) = 0; // delete Later
+		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) = 0; // delete Later
 		virtual void SubmitCommand(const std::function<void()>& command) = 0;
 
 		virtual void WaitForIdle() = 0;

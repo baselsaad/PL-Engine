@@ -2,80 +2,99 @@
 #include "Camera.h"
 #include "Core/Engine.h"
 #include "Platform/Windows/WindowsWindow.h"
-
-#include "glm/gtx/quaternion.hpp"
+#include "Event/Event.h"
+#include "Event/EventHandler.h"
 #include "Event/Input.h"
-#include "Utilities/Log.h"
-
 
 namespace PL_Engine
 {
-	static bool s_Pressed = false;
-	static glm::vec3 s_MousePressedPos = glm::vec3(0.0f);
-	static glm::vec3 s_DeltaMouse = glm::vec3(0.0f);
-
-	Camera::Camera(const glm::mat4& projection)
-		: m_Projection(projection)
-		, m_OrthographicSize(10.0f)
-		, m_OrthographicNear(-1.0f)
-		, m_OrthographicFar(1.0f)
-		, m_AspectRatio(Engine::Get()->GetWindow()->GetAspectRatio())
-		, m_Translation(glm::vec3(0.0f)), m_Rotation(0.0f), m_Scale(glm::vec3(1.0f))
-		, m_LastMousePosition(glm::vec2(0.0f))
+	Camera::Camera(float aspectRatio)
+		: m_AspectRatio(aspectRatio)
+		, m_ViewMatrix(1.0f)
+		, m_Zoom(1.0f)
+		, m_Rotation(true)
 	{
-	}
-
-	Camera::Camera()
-		: Camera(glm::mat4(1.0f))
-	{
-		CalculateProjectionView();
-	}
-
-	Camera::~Camera()
-	{
-	}
-
-	void Camera::CalculateProjectionView()
-	{
-		glm::mat4 rotation = glm::toMat4(glm::quat(m_Rotation));
-
-		glm::mat4 cameraTransform = glm::translate(glm::mat4(1.0f), m_Translation)
-			* rotation
-			* glm::scale(glm::mat4(1.0f), m_Scale);
-
-		// TODO: Get values
-		//m_OrthographicSize = 10.0f;
-		//m_OrthographicNear = -1.0f;
-		//m_OrthographicFar = 1.0f;
-		m_AspectRatio = Engine::Get()->GetWindow()->GetAspectRatio();
-
-		float orthoLeft = -m_OrthographicSize * m_AspectRatio * 0.5f;
-		float orthoRight = m_OrthographicSize * m_AspectRatio * 0.5f;
-		float orthoBottom = -m_OrthographicSize * 0.5f;
-		float orthoTop = m_OrthographicSize * 0.5f;
-
-		glm::mat4 projection = glm::ortho(orthoLeft, orthoRight,
-			orthoBottom, orthoTop, m_OrthographicNear, m_OrthographicFar);
-
-		m_Projection = projection * glm::inverse(cameraTransform);
+		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 	}
 
 	void Camera::OnUpdate(float deltaTime)
 	{
-		if (Input::IsKeyPressed(KeyCode::LeftAlt))
+		if (Input::IsKeyPressed(KeyCode::A))
 		{
-			glm::vec2 mouse = Input::GetMousePosition();
-			glm::vec2 delta = (m_LastMousePosition - mouse) * (0.001f * deltaTime);
-			m_LastMousePosition = mouse;
-
-			if (Input::IsMouseButtonDown(MouseButtonKey::Left))
-			{
-				m_Translation.x += (delta.x);
-				m_Translation.y += (delta.y * -1.0f);
-			}
+			m_CameraPosition.x -= cos(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y -= sin(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+		}
+		else if (Input::IsKeyPressed(KeyCode::D))
+		{
+			m_CameraPosition.x += cos(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y += sin(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
 		}
 
-		CalculateProjectionView();
+		if (Input::IsKeyPressed(KeyCode::W))
+		{
+			m_CameraPosition.x += -sin(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y -= cos(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+		}
+		else if (Input::IsKeyPressed(KeyCode::S))
+		{
+			m_CameraPosition.x -= -sin(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y += cos(glm::radians(m_CameraRotation)) * m_CameraMoveSpeed * deltaTime;
+		}
+
+		if (m_Rotation)
+		{
+			if (Input::IsKeyPressed(KeyCode::Q))
+				m_CameraRotation += m_CameraRotationSpeed * deltaTime;
+			if (Input::IsKeyPressed(KeyCode::E))
+				m_CameraRotation -= m_CameraRotationSpeed * deltaTime;
+
+			if (m_CameraRotation > 180.0f)
+				m_CameraRotation -= 360.0f;
+			else if (m_CameraRotation <= -180.0f)
+				m_CameraRotation += 360.0f;
+
+			SetRotation(m_CameraRotation);
+		}
+
+		SetPosition(m_CameraPosition);
+
+		m_CameraMoveSpeed = m_Zoom;
+	}
+
+	void Camera::RecalculateViewMatrix()
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), m_Position) *
+			glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraRotation), glm::vec3(0, 0, 1));
+
+		m_ViewMatrix = glm::inverse(transform);
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+	}
+
+	void Camera::SetupInput(EventHandler& e)
+	{
+		e.BindAction(EventType::MouseScrolled, this, &Camera::OnMouseScroll);
+		e.BindAction(EventType::ResizeWindow, this, &Camera::OnResizeWindow);
+	}
+
+	void Camera::OnMouseScroll(const MouseScrolledEvent& e)
+	{
+		m_Zoom -= e.GetYOffset() * 0.25f;
+		m_Zoom = glm::max(m_Zoom, 0.25f);
+
+		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+	}
+
+	void Camera::OnResizeWindow(const ResizeWindowEvent& e)
+	{
+		m_AspectRatio = (float)e.GetWidth() / (float)e.GetHeight();
+		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+	}
+
+	void Camera::SetProjection(float left, float right, float bottom, float top)
+	{
+		m_ProjectionMatrix = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 	}
 
 }

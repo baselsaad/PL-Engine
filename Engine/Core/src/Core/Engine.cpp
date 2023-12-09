@@ -15,7 +15,6 @@
 #include "Event/Input.h"
 #include "Utilities/DeltaTime.h"
 #include "Utilities/Timer.h"
-#include "Renderer/EditorCamera.h"
 #include "Random.h"
 
 namespace PL_Engine
@@ -40,10 +39,9 @@ namespace PL_Engine
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
 	}
 
-	
-	static void BenchmarkBatchRenderer(EditorCamera& camera)
+	static void BenchmarkBatchRenderer(Camera& camera)
 	{
-		float cord = camera.GetDistance();
+		float cord = camera.GetZoom() * 2.0f;
 		const glm::vec3 scale(0.45f);
 
 		for (float y = -cord; y < 5.0f; y += 0.5f)
@@ -60,24 +58,32 @@ namespace PL_Engine
 	{
 		Renderer::Init(RenderAPITarget::Vulkan);
 
+		const auto& phyDevice = VulkanContext::GetVulkanDevice()->GetPhysicalDevice();
+		Debug::Info("GPU: {}", phyDevice->GetDeviceName());
+		Debug::Info("Vendor: {}", phyDevice->GetVendor());
+		Debug::Info("DriverVersion: {}", phyDevice->GetDriverVersion());
+
 		const glm::vec3 scale(1.0f);
 		DeltaTime deltaTime;
 
 		//test
-		//Camera editorCamera;
-		EditorCamera editorCamera(30.0f, m_Window->GetAspectRatio(), 0.1f, 1000.0f);
-		editorCamera.SetupInput(m_EventHandler);
+		Camera camera(m_Window->GetAspectRatio());
+		camera.SetupInput(m_EventHandler);
+
+		BEGIN_PROFILE_SESSION("RenderingLoop", "RenderingLoop.json");
 
 		while (!m_ShouldCloseWindow)
 		{
+			SCOPE_TIMER_NAME("Frame");
+
 			deltaTime.Update();
 			m_Window->PollEvents();
 
-			editorCamera.OnUpdate(deltaTime.GetMilliSeconds());
-
-			Renderer::BeginFrame(editorCamera);
+			camera.OnUpdate(deltaTime.GetSeconds());
+			
+			Renderer::BeginFrame(camera);
 			{
-				//BenchmarkBatchRenderer(editorCamera);
+				BenchmarkBatchRenderer(camera);
 
 				Renderer::DrawQuad(glm::vec3(0.5f, 1.0f, 0.0f), scale, Colors::Spring_Green);
 				Renderer::DrawQuad(glm::vec3(0.0f, 0.0f, 0.0f), scale, Colors::Blue);
@@ -88,8 +94,9 @@ namespace PL_Engine
 			Renderer::EndFrame();
 		}
 
-		Renderer::WaitForIdle();
+		END_PROFILE_SESSION();
 
+		Renderer::WaitForIdle();
 		Renderer::Shutdown();
 		m_Window->Close();
 	}
