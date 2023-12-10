@@ -2,7 +2,7 @@
 #include "Random.h"
 #include <random>
 
-namespace PL_Engine
+namespace PAL
 {
 	std::default_random_engine Random::s_Generator(std::random_device{}());
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <memory.h>
 
-namespace PL_Engine
+namespace PAL
 {
 	template<typename T>
 	using WeakPtr = std::weak_ptr<T>;

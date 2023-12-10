@@ -1,6 +1,6 @@
 #pragma once
 
-namespace PL_Engine
+namespace PAL
 {
 	class Random {
 	public:

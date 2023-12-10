@@ -2,7 +2,7 @@
 #include "Core/Window.h"
 
 
-namespace PL_Engine
+namespace PAL
 {
 	class VulkanSwapChain;
 

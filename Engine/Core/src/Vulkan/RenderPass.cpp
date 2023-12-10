@@ -5,7 +5,7 @@
 #include "Vulkan/SwapChain.h"
 #include "VulkanContext.h"
 
-namespace PL_Engine
+namespace PAL
 {
 
 	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice)

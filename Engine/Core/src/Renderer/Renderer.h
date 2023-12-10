@@ -2,7 +2,7 @@
 #include "BatchRenderer.h"
 #include "Camera.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	class IRenderAPI;
 	class Camera;

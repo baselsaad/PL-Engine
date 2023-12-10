@@ -3,7 +3,7 @@
 #include "Core/Window.h"
 #include "Core/Engine.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	static Window* window;
 

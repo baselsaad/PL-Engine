@@ -2,7 +2,7 @@
 #include "EventHandler.h"
 #include "Utilities/Timer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 
 	void EventHandler::OnEvent(Event& e)

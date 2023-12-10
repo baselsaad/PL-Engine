@@ -66,7 +66,7 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 //  VulkanRenderer
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-namespace PL_Engine
+namespace PAL
 {
 	VkInstance VulkanContext::s_VulkanInstance = nullptr;
 	VkDebugUtilsMessengerEXT VulkanContext::s_DebugMessenger;
@@ -121,6 +121,9 @@ namespace PL_Engine
 		s_VulkanPhysicalDevice = MakeShared<VulkanPhysicalDevice>();
 		s_VulkanDevice = MakeShared<VulkanDevice>(s_VulkanPhysicalDevice);
 
+		Debug::Info("GPU: {}", s_VulkanPhysicalDevice->GetDeviceName());
+		Debug::Info("Vendor: {}", s_VulkanPhysicalDevice->GetVendor());
+		Debug::Info("DriverVersion: {}", s_VulkanPhysicalDevice->GetDriverVersion());
 	}
 
 	void VulkanContext::Shutdown()

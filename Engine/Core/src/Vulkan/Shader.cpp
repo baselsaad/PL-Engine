@@ -3,7 +3,7 @@
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	std::vector<char> Shader::ReadFile(const std::string& filename)
 	{

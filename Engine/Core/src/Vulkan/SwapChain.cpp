@@ -11,7 +11,7 @@
 #include "Utilities/Timer.h"
 
 
-namespace PL_Engine
+namespace PAL
 {
 	VulkanSwapChain::VulkanSwapChain(const std::shared_ptr<VulkanDevice>& device)
 		: m_Device(device)

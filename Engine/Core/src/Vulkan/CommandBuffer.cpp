@@ -9,7 +9,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	CommandBuffer::CommandBuffer()
 	{

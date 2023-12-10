@@ -6,7 +6,7 @@
 #include "VulkanDevice.h"
 #include "VertexBuffer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	PipeLine::PipeLine(const SharedPtr<RenderPass>& renderpass)
 	{

@@ -17,7 +17,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "Utilities/Timer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	uint32_t VulkanAPI::s_CurrentFrame = 0;
 	bool VulkanAPI::s_ResizeFrameBuffer = false;

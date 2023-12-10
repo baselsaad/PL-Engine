@@ -3,7 +3,7 @@
 #include "glm/vec2.hpp"
 
 
-namespace PL_Engine
+namespace PAL
 {
 	class Input
 	{

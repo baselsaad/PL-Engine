@@ -1,7 +1,7 @@
 #pragma once
 #include "VulkanAPI.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	class VulkanDevice;
 	class VulkanPhysicalDevice;

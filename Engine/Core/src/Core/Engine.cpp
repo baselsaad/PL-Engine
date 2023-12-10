@@ -16,8 +16,9 @@
 #include "Utilities/DeltaTime.h"
 #include "Utilities/Timer.h"
 #include "Random.h"
+#include "Renderer/OrthographicCamera.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	Engine* Engine::s_Instance;
 
@@ -39,9 +40,10 @@ namespace PL_Engine
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
 	}
 
-	static void BenchmarkBatchRenderer(Camera& camera)
+	static void BenchmarkBatchRenderer(OrthographicCamera& camera)
 	{
-		float cord = camera.GetZoom() * 2.0f;
+		//float cord = camera.GetZoom() * 2.0f;
+		float cord = 5.0f;
 		const glm::vec3 scale(0.45f);
 
 		for (float y = -cord; y < 5.0f; y += 0.5f)
@@ -58,16 +60,11 @@ namespace PL_Engine
 	{
 		Renderer::Init(RenderAPITarget::Vulkan);
 
-		const auto& phyDevice = VulkanContext::GetVulkanDevice()->GetPhysicalDevice();
-		Debug::Info("GPU: {}", phyDevice->GetDeviceName());
-		Debug::Info("Vendor: {}", phyDevice->GetVendor());
-		Debug::Info("DriverVersion: {}", phyDevice->GetDriverVersion());
-
 		const glm::vec3 scale(1.0f);
 		DeltaTime deltaTime;
 
 		//test
-		Camera camera(m_Window->GetAspectRatio());
+		OrthographicCamera camera(m_Window->GetAspectRatio());
 		camera.SetupInput(m_EventHandler);
 
 		BEGIN_PROFILE_SESSION("RenderingLoop", "RenderingLoop.json");

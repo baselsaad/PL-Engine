@@ -8,7 +8,7 @@
 #include "Renderer.h"
 #include "Utilities/Timer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	BatchRenderer::BatchRenderer(const SharedPtr<CommandBuffer>& cmBuffer)
 	{

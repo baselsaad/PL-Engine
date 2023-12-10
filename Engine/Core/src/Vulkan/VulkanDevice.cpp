@@ -3,7 +3,7 @@
 #include "VulkanContext.h"
 #include "SwapChain.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	//-------------------------------------------------------------------------------------------------------------
 	// VulkanPhysicalDevice

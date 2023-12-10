@@ -2,7 +2,7 @@
 #include "Vulkan/VulkanRenderer.h"
 #include "Vulkan/VertexBuffer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	class VulkanVertexBuffer;
 	class VulkanIndexBuffer;

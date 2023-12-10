@@ -2,7 +2,7 @@
 #include "Window.h"
 #include "Event/EventHandler.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	class VulkanAPI;
 

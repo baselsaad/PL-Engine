@@ -1,7 +1,7 @@
 #pragma once
 #include "Event.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	using EventFuncType = std::function<void(const Event&)>;
 	// @TODO: BindActions and Axsis

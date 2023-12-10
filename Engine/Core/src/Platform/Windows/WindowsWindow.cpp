@@ -5,7 +5,7 @@
 #include <type_traits>
 
 
-namespace PL_Engine
+namespace PAL
 {
 
 	static void GLFWErrorCallback(int error, const char* desc)

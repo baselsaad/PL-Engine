@@ -10,19 +10,19 @@
 #include "Utilities/Colors.h"
 #include "Utilities/Timer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 	SharedPtr<IRenderAPI> Renderer::s_RenderAPI;
 	BatchRenderer* Renderer::s_BatchRenderer;
 	glm::mat4 Renderer::s_Projection;
-	PL_Engine::RenderStats Renderer::s_RenderStats;
+	PAL::RenderStats Renderer::s_RenderStats;
 
 	void Renderer::Init(RenderAPITarget target)
 	{
 		switch (target)
 		{
-			case PL_Engine::RenderAPITarget::Vulkan:	s_RenderAPI = MakeShared<VulkanAPI>();		break;
-			case PL_Engine::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
+			case PAL::RenderAPITarget::Vulkan:	s_RenderAPI = MakeShared<VulkanAPI>();		break;
+			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
 			default:									ASSERT(false, "");							break;
 		}
 

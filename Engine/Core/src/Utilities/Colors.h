@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-namespace PL_Engine
+namespace PAL
 {
 	struct RGBA
 	{

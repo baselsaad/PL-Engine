@@ -9,7 +9,7 @@
 #include "VulkanAPI.h"
 
 
-namespace PL_Engine
+namespace PAL
 {
 
 	VulkanIndexBuffer::VulkanIndexBuffer(const SharedPtr<CommandBuffer>& cmBuffer, void* data, uint32_t size)

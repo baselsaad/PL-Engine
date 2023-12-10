@@ -12,7 +12,7 @@
 #include "VulkanAPI.h"
 #include "Renderer/Renderer.h"
 
-namespace PL_Engine
+namespace PAL
 {
 
 	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t size)
