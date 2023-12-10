@@ -332,9 +332,13 @@ namespace PAL
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		// Only reset the fence if we are submitting work
-		vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[currentFrame]);
-		VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[currentFrame])); // execution of the recorded commands
+		{
+			SCOPE_TIMER("GPU Frame");
+
+			VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[currentFrame])); // execution of the recorded commands
+			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[currentFrame], VK_TRUE, UINT64_MAX)); // wait for GPU to complete
+			VK_CHECK_RESULT(vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[currentFrame])); // set Fence to unsignaled state 
+		}
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -360,11 +364,6 @@ namespace PAL
 		}
 
 		currentFrame = (currentFrame + 1) % VulkanAPI::MAX_FRAMES_IN_FLIGHT;
-
-		{
-			//SCOPE_TIMER();
-			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[currentFrame], VK_TRUE, UINT64_MAX));
-		}
 	}
 
 	void VulkanSwapChain::CreateSyncObjects()
@@ -378,7 +377,7 @@ namespace PAL
 
 		VkFenceCreateInfo fenceInfo{};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		//fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		// Each Frame has it's own Semaphores and Fences
 		for (size_t i = 0; i < VulkanAPI::MAX_FRAMES_IN_FLIGHT; i++)

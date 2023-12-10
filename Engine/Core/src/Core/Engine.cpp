@@ -63,11 +63,8 @@ namespace PAL
 		const glm::vec3 scale(1.0f);
 		DeltaTime deltaTime;
 
-		//test
 		OrthographicCamera camera(m_Window->GetAspectRatio());
 		camera.SetupInput(m_EventHandler);
-
-		BEGIN_PROFILE_SESSION("RenderingLoop", "RenderingLoop.json");
 
 		while (!m_ShouldCloseWindow)
 		{
@@ -77,7 +74,7 @@ namespace PAL
 			m_Window->PollEvents();
 
 			camera.OnUpdate(deltaTime.GetSeconds());
-			
+
 			Renderer::BeginFrame(camera);
 			{
 				BenchmarkBatchRenderer(camera);
@@ -91,7 +88,6 @@ namespace PAL
 			Renderer::EndFrame();
 		}
 
-		END_PROFILE_SESSION();
 
 		Renderer::WaitForIdle();
 		Renderer::Shutdown();

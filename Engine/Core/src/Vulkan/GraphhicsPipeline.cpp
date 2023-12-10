@@ -10,8 +10,8 @@ namespace PAL
 {
 	PipeLine::PipeLine(const SharedPtr<RenderPass>& renderpass)
 	{
-		auto vertShaderCode = Shader::ReadFile("res/shaders/vert.spv");
-		auto fragShaderCode = Shader::ReadFile("res/shaders/frag.spv");
+		auto vertShaderCode = Shader::ReadFile(ENGINE_ROOT "/Engine/Core/res/shaders/vert.spv");
+		auto fragShaderCode = Shader::ReadFile(ENGINE_ROOT "/Engine/Core/res/shaders/frag.spv");
 
 		VkShaderModule vertShaderModule = Shader::CreateShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = Shader::CreateShaderModule(fragShaderCode);

@@ -1,5 +1,5 @@
 #pragma once
-#include "Instrumentation/InstrumentationTimer.h"
+#include "InstrumentationTimer.h"
 
 class Timer
 {
@@ -31,20 +31,20 @@ private:
  * From: https://github.com/TheCherno/Hazel/blob/master/Hazel/src/Hazel/Debug/Instrumentor.h
  */
 #if defined (__FUNCSIG__)
-#define FUNC_NAME __FUNCTION__
+#define FUNC_NAME __FUNCSIG__
 #else
-#define FUNC_NAME "__FUNCTION__ not supported in your Compiler"
+#define FUNC_NAME "__FUNCSIG__ not supported in your Compiler"
 #endif
 
 #if 0
-#define BEGIN_PROFILE_SESSION(name, filepath)	Instrumentor::Get().BeginSession(name, filepath)
+#define BEGIN_PROFILE_SESSION(name)	Instrumentor::Get().BeginSession(name)
 #define END_PROFILE_SESSION()					Instrumentor::Get().EndSession()
 
 #define SCOPE_TIMER_NAME(name) InstrumentationTimer timer(name)
 #define SCOPE_TIMER() SCOPE_TIMER_NAME(FUNC_NAME)
 
 #else 
-#define BEGIN_PROFILE_SESSION(name, filepath)	
+#define BEGIN_PROFILE_SESSION(name)	
 #define END_PROFILE_SESSION()	
 
 #define SCOPE_TIMER_NAME(name)

@@ -15,9 +15,15 @@ workspace "PL-Engine"
 		"MultiProcessorCompile"
 	}
 
+    prebuildcommands
+    {
+        "call %{wks.location}/Engine/Core/res/shaders/compile.bat",
+    }
+
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.platform}"
 
 VULKAN_SDK = os.getenv("VULKAN_SDK")
+EngineRoot = os.getcwd()
 
 -- Include directories relative 
 IncludeDir = {}
@@ -26,6 +32,7 @@ IncludeDir["glm"] =  "%{wks.location}/Engine/Core/vendor/glm-0.9.9.8/"
 IncludeDir["stb_image"] = "%{wks.location}/Engine/Core/vendor/stb_image"
 IncludeDir["imgui"] = "%{wks.location}/Engine/Core/vendor/imgui"
 IncludeDir["spdlog"] = "%{wks.location}/Engine/Core/vendor/spdlog/include"
+IncludeDir["Instrumentation"] = "%{wks.location}/Engine/Core/vendor/Instrumentation/"
 IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
 
 Library = {}
@@ -45,12 +52,19 @@ newaction {
     trigger = "clean",
     description = "Remove all binaries and intermediate binaries, and vs files.",
     execute = function()
+
         print("Removing binaries")
         os.rmdir("./Binaries")
+
         print("Removing intermediate binaries")
         os.rmdir("./Intermediate")
+
         print("Removing project files")
         os.rmdir("./.vs")
+
+        print("Removing Profiler files")
+        os.rmdir("./Profiler")
+
         os.remove("**.sln")
         os.remove("**.vcxproj")
         os.remove("**.vcxproj.filters")

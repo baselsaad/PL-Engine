@@ -8,15 +8,18 @@ project "Editor"
 	targetdir ("%{wks.location}/Binaries/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/Intermediate/" .. outputdir .. "/%{prj.name}")
 
+	defines
+	{
+		"_CRT_SECURE_NO_WARNINGS",
+		"ENGINE_ROOT=\"" .. EngineRoot .. "\""
+	}
+
 	files
 	{
 		"src/*",
 		"src/**.h",
 		"src/**.hpp",
 		"src/**.cpp",
-
-		"res/shaders/*.frag",
-		"res/shaders/*.vert"
 	}
 
 	includedirs
@@ -28,6 +31,7 @@ project "Editor"
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",
+		"%{IncludeDir.Instrumentation}",
 		"%{IncludeDir.stb_image}"
 	}
 

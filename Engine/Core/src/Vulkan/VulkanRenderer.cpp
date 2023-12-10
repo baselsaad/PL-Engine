@@ -57,7 +57,7 @@ namespace PAL
 		s_ResizeFrameBuffer = resize;
 	}
 
-	void VulkanAPI::SubmitCommand(const std::function<void()>& command)
+	void VulkanAPI::RecordCommand(const std::function<void()>& command)
 	{
 		m_Commands.push_back(command);
 	}
@@ -129,7 +129,7 @@ namespace PAL
 			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], indexCount, 1, 0, 0, 0);
 		};
 
-		SubmitCommand(drawCommand);
+		RecordCommand(drawCommand);
 	}
 
 	void VulkanAPI::ExcuteDrawCommands()

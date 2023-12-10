@@ -74,7 +74,7 @@ namespace PAL
 	{
 		int currentFrame = VulkanAPI::GetCurrentFrame();
 
-		if (m_QuadBatchingData.CurrentBatch < m_QuadBatchingData.BatchesArray[currentFrame].size())
+		if (m_QuadBatchingData.CurrentBatch < m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch < size --> we do not use other batches
 		{
 			// we should destroy all buffers we do not need 
 			for (int i = m_QuadBatchingData.CurrentBatch + 1; i < m_QuadBatchingData.BatchesArray[currentFrame].size(); i++)
@@ -96,7 +96,7 @@ namespace PAL
 		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[VulkanAPI::GetCurrentFrame()];
 
 		m_QuadBatchingData.CurrentBatch++;
-		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size()) // currentbatch == size --> we do not use other batches
+		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch == size -> we do not have free batches -> create new 
 		{
 			QuadBatch newBatch(currentFrame);
 			m_QuadBatchingData.BatchesArray[currentFrame].push_back(newBatch);

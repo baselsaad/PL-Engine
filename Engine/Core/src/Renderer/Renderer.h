@@ -37,7 +37,7 @@ namespace PAL
 		
 		static void DrawQuad(const glm::vec3& translation, const glm::vec3& scale ,const glm::vec3& color = glm::vec3(0.5f, 1.0f, 0.0f));// just for test
 
-		static void SubmitCommand(const std::function<void()>& command);
+		static void RecordCommand(const std::function<void()>& command);
 		static void WaitForIdle();
 		static void OnResizeWindow(bool resize = false, int width = 0, int height = 0);
 

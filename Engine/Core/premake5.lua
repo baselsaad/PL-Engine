@@ -28,13 +28,19 @@ project "Core"
 		"vendor/VulkanMemoryAllocator-3.0.1/include/**.h",
 		"vendor/VulkanMemoryAllocator-3.0.1/include/**.cpp",
 
-		"vendor/Instrumentation/*.h"
+		"res/shaders/*.frag",
+		"res/shaders/*.vert",
+
+		"%{IncludeDir.Instrumentation}/*.h"
 	}
 
 	defines
 	{
-		"_CRT_SECURE_NO_WARNINGS" 
+		"_CRT_SECURE_NO_WARNINGS",
+		"ENGINE_ROOT=\"" .. EngineRoot .. "\""
 	}
+
+	defines {  }
 
 	includedirs
 	{
@@ -45,6 +51,7 @@ project "Core"
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",
+		"%{IncludeDir.Instrumentation}",
 		"%{IncludeDir.stb_image}"
 	}
 

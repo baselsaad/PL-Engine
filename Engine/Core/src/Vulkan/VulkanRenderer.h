@@ -26,7 +26,7 @@ namespace PAL
 		virtual void WaitForIdle() override;
 		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) override;
 
-		virtual void SubmitCommand(const std::function<void()>& drawCommand);
+		virtual void RecordCommand(const std::function<void()>& drawCommand);
 
 		inline static constexpr int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 		inline static uint32_t GetCurrentFrame() { return s_CurrentFrame; }

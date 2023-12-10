@@ -19,7 +19,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 	switch (messageSeverity)
 	{
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-		Debug::Log("validation layer: {0}", pCallbackData->pMessage);
+		//Debug::Log("validation layer: {0}", pCallbackData->pMessage);
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
 		Debug::Info("validation layer: {0}", pCallbackData->pMessage);
@@ -63,7 +63,7 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
-//  VulkanRenderer
+//  VulkanContext
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 namespace PAL

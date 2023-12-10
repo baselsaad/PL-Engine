@@ -6,7 +6,6 @@
 
 namespace PAL
 {
-
 	OrthographicCamera::OrthographicCamera(float aspectratio)
 		: Camera(aspectratio)
 		, m_Zoom(1.0f)

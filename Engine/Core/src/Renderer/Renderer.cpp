@@ -19,6 +19,8 @@ namespace PAL
 
 	void Renderer::Init(RenderAPITarget target)
 	{
+		SCOPE_TIMER("Init Renderer");
+
 		switch (target)
 		{
 			case PAL::RenderAPITarget::Vulkan:	s_RenderAPI = MakeShared<VulkanAPI>();		break;
@@ -27,9 +29,8 @@ namespace PAL
 		}
 
 		s_RenderAPI->InitRenderApiContext();
-		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
-
 		s_RenderAPI->Init();
+		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
 
 		//@TODO: Move later GetCommandBuffer
 		auto cmdBuffer = static_cast<VulkanAPI*>((VulkanAPI*)s_RenderAPI.get())->GetCommandBuffer();
@@ -38,6 +39,7 @@ namespace PAL
 
 	void Renderer::Shutdown()
 	{
+		SCOPE_TIMER("Renderer Renderer");
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		delete s_BatchRenderer;
@@ -105,11 +107,11 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void Renderer::SubmitCommand(const std::function<void()>& command)
+	void Renderer::RecordCommand(const std::function<void()>& command)
 	{
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		s_RenderAPI->SubmitCommand(command);
+		s_RenderAPI->RecordCommand(command);
 	}
 
 	void Renderer::WaitForIdle()
