@@ -17,7 +17,7 @@ namespace PAL
 		void CalculateViewProjectionMatrix();
 		void OnMouseScroll(const MouseScrolledEvent& e);
 		void OnResizeWindow(const ResizeWindowEvent& e);
-		void SetProjection(float left, float right, float bottom, float top);
+		void SetOrthoProjectionBounds(float left, float right, float bottom, float top);
 
 		inline float GetZoom() const { return m_Zoom; }
 

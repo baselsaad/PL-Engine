@@ -52,7 +52,7 @@ namespace PAL
 
 		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		s_Projection = camera.GetViewProjectionMatrix();
+		s_Projection = camera.GetModellViewProjection();
 
 		s_RenderAPI->BeginFrame();
 		s_BatchRenderer->Begin();

@@ -38,7 +38,7 @@ private:
 
 #if 0
 #define BEGIN_PROFILE_SESSION(name)	Instrumentor::Get().BeginSession(name)
-#define END_PROFILE_SESSION()					Instrumentor::Get().EndSession()
+#define END_PROFILE_SESSION()		Instrumentor::Get().EndSession()
 
 #define SCOPE_TIMER_NAME(name) InstrumentationTimer timer(name)
 #define SCOPE_TIMER() SCOPE_TIMER_NAME(FUNC_NAME)

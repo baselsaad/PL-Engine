@@ -7,12 +7,12 @@ namespace PAL
 
 	void EventHandler::OnEvent(Event& e)
 	{
-		auto finder = m_BoundFunctions.find(e.GetEventType());
-		if (finder != m_BoundFunctions.end())
+		auto finder = m_BoundCallbacks.find(e.GetEventType());
+		if (finder != m_BoundCallbacks.end())
 		{
-			const std::vector<EventFuncType>& functions = finder->second;
+			const std::vector<EventCallback>& functions = finder->second;
 
-			for (const EventFuncType& func : functions)
+			for (const EventCallback& func : functions)
 			{
 				func(e);
 			}

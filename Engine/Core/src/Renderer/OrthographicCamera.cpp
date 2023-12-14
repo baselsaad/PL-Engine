@@ -10,8 +10,8 @@ namespace PAL
 		: Camera(aspectratio)
 		, m_Zoom(1.0f)
 	{
-		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
-		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		m_Mvp = m_ModelTransformation * m_ViewTransformation;
 	}
 
 	void OrthographicCamera::OnUpdate(float deltaTime)
@@ -45,10 +45,8 @@ namespace PAL
 
 	void OrthographicCamera::CalculateViewProjectionMatrix()
 	{
-		glm::mat4 view = glm::lookAt(m_CameraPosition, m_CameraPosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-		m_ViewMatrix = view;
-		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+		m_ViewTransformation = glm::lookAt(m_CameraPosition, m_CameraPosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		m_Mvp = m_ModelTransformation * m_ViewTransformation;
 	}
 
 	void OrthographicCamera::OnMouseScroll(const MouseScrolledEvent& e)
@@ -56,19 +54,18 @@ namespace PAL
 		m_Zoom -= e.GetYOffset() * 0.25f;
 		m_Zoom = glm::max(m_Zoom, 0.25f);
 
-		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 	}
 
 	void OrthographicCamera::OnResizeWindow(const ResizeWindowEvent& e)
 	{
 		m_AspectRatio = (float)e.GetWidth() / (float)e.GetHeight();
-		SetProjection(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 	}
 
-	void OrthographicCamera::SetProjection(float left, float right, float bottom, float top)
+	void OrthographicCamera::SetOrthoProjectionBounds(float left, float right, float bottom, float top)
 	{
-		m_ProjectionMatrix = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
-		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+		m_ModelTransformation = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+		m_Mvp = m_ModelTransformation * m_ViewTransformation;
 	}
-
 }

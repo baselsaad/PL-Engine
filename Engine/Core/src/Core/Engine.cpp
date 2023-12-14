@@ -43,7 +43,7 @@ namespace PAL
 	static void BenchmarkBatchRenderer(OrthographicCamera& camera)
 	{
 		//float cord = camera.GetZoom() * 2.0f;
-		float cord = 5.0f;
+		float cord = 10.0f;
 		const glm::vec3 scale(0.45f);
 
 		for (float y = -cord; y < 5.0f; y += 0.5f)
@@ -99,11 +99,12 @@ namespace PAL
 		m_EventCallback = [this](Event& e) -> void { m_EventHandler.OnEvent(e); };
 		glfwSetWindowUserPointer(*m_Window, &m_EventCallback);
 
+		//@TODO: Move to the window 
 		// Window Close 
 		{
 			auto callback = [](GLFWwindow* window)
 			{
-				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window); //  eventCallback = m_EventCallback
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window); //  eventCallback = m_EventCallback
 				CloseWindowEvent e;
 				eventCallback(e);
 			};
@@ -115,7 +116,7 @@ namespace PAL
 		{
 			auto callback = [](GLFWwindow* window, int width, int height)
 			{
-				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
 				ResizeWindowEvent event(width, height);
 				eventCallback(event);
 			};
@@ -128,7 +129,7 @@ namespace PAL
 		{
 			auto callback = [](GLFWwindow* window, int button, int action, int mods)
 			{
-				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
 				double outX, outY;
 				glfwGetCursorPos(window, &outX, &outY);
 
@@ -156,7 +157,7 @@ namespace PAL
 		{
 			auto callback = [](GLFWwindow* window, double x, double y)
 			{
-				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
 
 				MouseMoveEvent event((float)x, (float)y);
 				eventCallback(event);
@@ -169,7 +170,7 @@ namespace PAL
 		{
 			auto callback = [](GLFWwindow* window, double x, double y)
 			{
-				auto& eventCallback = *(EventFuncType*)glfwGetWindowUserPointer(window);
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
 
 				MouseScrolledEvent event((float)x, (float)y);
 				eventCallback(event);
@@ -183,7 +184,7 @@ namespace PAL
 	void Engine::OnResizeWindow(const ResizeWindowEvent& event)
 	{
 		Renderer::OnResizeWindow(true, event.GetWidth(), event.GetHeight());
-		Engine::Get()->GetWindow()->OnResize(event.GetWidth(), event.GetHeight());
+		m_Window->OnResize(event.GetWidth(), event.GetHeight());
 	}
 
 	void Engine::OnCloseWindow(const CloseWindowEvent& event)
