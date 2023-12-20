@@ -17,7 +17,7 @@ workspace "PL-Engine"
 
     prebuildcommands
     {
-        "call %{wks.location}/Engine/Core/res/shaders/compile.bat",
+        "call %{wks.location}Engine/Core/res/shaders/compile.bat",
     }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.platform}"
@@ -34,10 +34,11 @@ IncludeDir["imgui"] = "%{wks.location}/Engine/Core/vendor/imgui"
 IncludeDir["spdlog"] = "%{wks.location}/Engine/Core/vendor/spdlog/include"
 IncludeDir["Instrumentation"] = "%{wks.location}/Engine/Core/vendor/Instrumentation/"
 IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
+IncludeDir["ECS"] = "%{wks.location}/Engine/Core/vendor/entt/single_include"
 
 Library = {}
 Library["Vulkan"] = "%{VULKAN_SDK}/Lib/vulkan-1.lib"
-Library["VulkanUtils"] = "%{VULKAN_SDK}/Lib/VkLayer_utils.lib"
+--Library["VulkanUtils"] = "%{VULKAN_SDK}/Lib/VkLayer_utils.lib"
 
 -- Projects
 group "Dependencies"

@@ -9,6 +9,7 @@
 #include "Vulkan/VertexBuffer.h"
 #include "Utilities/Colors.h"
 #include "Utilities/Timer.h"
+#include "Map/ECS.h"
 
 namespace PAL
 {
@@ -25,7 +26,7 @@ namespace PAL
 		{
 			case PAL::RenderAPITarget::Vulkan:	s_RenderAPI = MakeShared<VulkanAPI>();		break;
 			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
-			default:									ASSERT(false, "");							break;
+			default:							ASSERT(false, "");							break;
 		}
 
 		s_RenderAPI->InitRenderApiContext();
@@ -46,7 +47,7 @@ namespace PAL
 		s_RenderAPI->Shutdown();
 	}
 
-	void Renderer::BeginFrame(const Camera& camera)
+	void Renderer::StartFrame(const Camera& camera)
 	{
 		SCOPE_TIMER();
 
@@ -62,8 +63,6 @@ namespace PAL
 	{
 		SCOPE_TIMER();
 
-		int currentFrame = VulkanAPI::GetCurrentFrame();
-		
 		// Quads
 		s_BatchRenderer->BindCurrentQuadBatch();
 		s_RenderAPI->DrawQuad(s_BatchRenderer->GetVertexBuffer(), s_BatchRenderer->GetIndexBuffer(), s_BatchRenderer->GetIndexCount(), s_Projection);
@@ -104,6 +103,22 @@ namespace PAL
 			* glm::scale(glm::mat4(1.0f), scale);
 
 		s_BatchRenderer->AddQuadToBatch(transform, color);
+		//s_BatchRenderer->AddQuadToBatch(translation, scale, color);
+		s_RenderStats.Quads++;
+	}
+
+	void Renderer::DrawQuad(const TransformComponent& transform, const glm::vec3& color)
+	{
+		SCOPE_TIMER();
+
+		ASSERT(s_RenderAPI != nullptr, "No RenderAPI is Used");
+		if (s_BatchRenderer->ShouldDrawCurrentBatch())
+		{
+			Flush();
+			s_BatchRenderer->FindOrCreateNewQuadBatch();
+		}
+
+		s_BatchRenderer->AddQuadToBatch(transform.GetTransformMatrix(), color);
 		s_RenderStats.Quads++;
 	}
 

@@ -10,6 +10,6 @@ int main()
 
 	BEGIN_PROFILE_SESSION("Engine");
 	PAL::Engine app;
-	app.Run();
+	app.EngineLoop();
 	END_PROFILE_SESSION();
 }

@@ -98,16 +98,16 @@ namespace PAL
 		scissor.offset = { 0, 0 };
 		scissor.extent = swapchain->GetSwapChainExtent();
 		vkCmdSetScissor(commandBuffers[s_CurrentFrame], 0, 1, &scissor);
-
+		
 		// CommandBuffer
+		m_RenderPass->Begin(commandBuffers[s_CurrentFrame], swapchain->GetImageIndex());
 		{
-			m_RenderPass->Begin(commandBuffers[s_CurrentFrame], swapchain->GetImageIndex());
+			//Timer scopeTimer("ExcuteDrawCommands");
 			ExcuteDrawCommands();
-			m_RenderPass->End(commandBuffers[s_CurrentFrame]);
-
-			VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
 		}
+		m_RenderPass->End(commandBuffers[s_CurrentFrame]);
 
+		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
 		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_CommandBuffer); //Move later the main loop 
 	}
 

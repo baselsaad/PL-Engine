@@ -76,7 +76,7 @@ namespace PAL
 	SharedPtr<VulkanPhysicalDevice> VulkanContext::s_VulkanPhysicalDevice;
 	SharedPtr<VulkanSwapChain> VulkanContext::s_SwapChain;
 
-	static const std::vector<const char*> validationLayers =
+	static const std::vector<const char*> s_ValidationLayers =
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
@@ -103,8 +103,8 @@ namespace PAL
 
 #if DEBUG
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames = validationLayers.data();
+		createInfo.enabledLayerCount = static_cast<uint32_t>(s_ValidationLayers.size());
+		createInfo.ppEnabledLayerNames = s_ValidationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -193,7 +193,7 @@ namespace PAL
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		for (const char* layerName : validationLayers)
+		for (const char* layerName : s_ValidationLayers)
 		{
 			bool layerFound = false;
 

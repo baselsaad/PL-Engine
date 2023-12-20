@@ -52,6 +52,7 @@ project "Core"
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.Instrumentation}",
+		"%{IncludeDir.ECS}",
 		"%{IncludeDir.stb_image}"
 	}
 
@@ -60,7 +61,7 @@ project "Core"
 		"GLFW",
 		"ImGui",
 		"%{Library.Vulkan}",
-		"%{Library.VulkanUtils}"
+		--"%{Library.VulkanUtils}"
 	}
 
 	filter "system:windows"

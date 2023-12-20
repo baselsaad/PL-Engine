@@ -23,6 +23,14 @@ namespace PAL
 		{
 		}
 
+		RGBA(const glm::vec4& rgba)
+			: R(rgba.x)
+			, G(rgba.y)
+			, B(rgba.z)
+			, Alpha(rgba.w)
+		{
+		}
+
 		bool operator==(const RGBA& other)
 		{
 			return
@@ -35,6 +43,11 @@ namespace PAL
 		operator glm::vec3()
 		{
 			return { R,G,B };
+		}
+
+		operator glm::vec4()
+		{
+			return { R,G,B, Alpha};
 		}
 
 		operator const glm::vec3() const 

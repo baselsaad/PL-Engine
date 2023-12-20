@@ -7,6 +7,7 @@ namespace PAL
 	class IRenderAPI;
 	class Camera;
 	class EditorCamera;
+	struct TransformComponent;
 
 	enum class RenderAPITarget
 	{
@@ -32,10 +33,11 @@ namespace PAL
 		static void Init(RenderAPITarget target);
 		static void Shutdown();
 
-		static void BeginFrame(const Camera& camera);
+		static void StartFrame(const Camera& camera);
 		static void EndFrame();
 		
 		static void DrawQuad(const glm::vec3& translation, const glm::vec3& scale ,const glm::vec3& color = glm::vec3(0.5f, 1.0f, 0.0f));// just for test
+		static void DrawQuad(const TransformComponent& transform, const glm::vec3& color);// just for test
 
 		static void RecordCommand(const std::function<void()>& command);
 		static void WaitForIdle();

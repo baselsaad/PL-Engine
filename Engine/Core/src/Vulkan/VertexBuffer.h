@@ -7,8 +7,11 @@ namespace PAL
 
 	struct QuadVertex
 	{
+
 		glm::vec3 Pos;
 		glm::vec3 Color; // @TODO: Vec4
+		//glm::vec3 Translation;
+		//glm::vec3 Scale;
 
 		static VkVertexInputBindingDescription GetBindingDescription()
 		{
@@ -33,6 +36,16 @@ namespace PAL
 			attributeDescriptions[1].location = 1;
 			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 			attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
+
+			//attributeDescriptions[2].binding = 0;
+			//attributeDescriptions[2].location = 2;
+			//attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+			//attributeDescriptions[2].offset = offsetof(QuadVertex, Translation);
+
+			//attributeDescriptions[3].binding = 0;
+			//attributeDescriptions[3].location = 3;
+			//attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+			//attributeDescriptions[3].offset = offsetof(QuadVertex, Scale);
 
 			return attributeDescriptions;
 		}

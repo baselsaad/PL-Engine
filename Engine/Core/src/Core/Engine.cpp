@@ -17,6 +17,9 @@
 #include "Utilities/Timer.h"
 #include "Random.h"
 #include "Renderer/OrthographicCamera.h"
+#include "glm/gtc/epsilon.hpp"
+#include "Math/Math.h"
+#include "Map/World.h"
 
 namespace PAL
 {
@@ -38,56 +41,25 @@ namespace PAL
 		SetupEventCallbacks();
 		m_EventHandler.BindAction(EventType::ResizeWindow, this, &Engine::OnResizeWindow);
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
-	}
 
-	static void BenchmarkBatchRenderer(OrthographicCamera& camera)
-	{
-		//float cord = camera.GetZoom() * 2.0f;
-		float cord = 10.0f;
-		const glm::vec3 scale(0.45f);
-
-		for (float y = -cord; y < 5.0f; y += 0.5f)
-		{
-			for (float x = -cord; x < 5.0f; x += 0.5f)
-			{
-				glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
-				Renderer::DrawQuad({ x, y, 0.0f }, scale, color);
-			}
-		}
-	}
-
-	void Engine::Run()
-	{
 		Renderer::Init(RenderAPITarget::Vulkan);
+	}
 
-		const glm::vec3 scale(1.0f);
-		DeltaTime deltaTime;
-
-		OrthographicCamera camera(m_Window->GetAspectRatio());
-		camera.SetupInput(m_EventHandler);
+	void Engine::EngineLoop()
+	{
+		World world;
+		world.BeginPlay();
 
 		while (!m_ShouldCloseWindow)
 		{
 			SCOPE_TIMER_NAME("Frame");
 
-			deltaTime.Update();
+			m_DeltaTime.Update();
 			m_Window->PollEvents();
 
-			camera.OnUpdate(deltaTime.GetSeconds());
-
-			Renderer::BeginFrame(camera);
-			{
-				BenchmarkBatchRenderer(camera);
-
-				Renderer::DrawQuad(glm::vec3(0.5f, 1.0f, 0.0f), scale, Colors::Spring_Green);
-				Renderer::DrawQuad(glm::vec3(0.0f, 0.0f, 0.0f), scale, Colors::Blue);
-				Renderer::DrawQuad(glm::vec3(5.0f, 3.5f, 0.0f), scale, Colors::Dark_Magenta);
-				Renderer::DrawQuad(glm::vec3(-4.0f, -3.0f, 0.0f), scale, Colors::Tan);
-				Renderer::DrawQuad(glm::vec3(2.0f, -3.5f, 0.0f), scale, Colors::Yellow);
-			}
-			Renderer::EndFrame();
+			// TODO: GetWorld
+			world.OnUpdate(m_DeltaTime.GetSeconds());
 		}
-
 
 		Renderer::WaitForIdle();
 		Renderer::Shutdown();
