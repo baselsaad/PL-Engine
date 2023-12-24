@@ -9,7 +9,8 @@ int main()
 	Debug::Init("Engine-Editor");
 
 	BEGIN_PROFILE_SESSION("Engine");
-	PAL::Engine app;
-	app.EngineLoop();
+	PAL::Engine engine;
+	engine.Run();
+	engine.Stop();
 	END_PROFILE_SESSION();
 }

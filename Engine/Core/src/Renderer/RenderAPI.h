@@ -21,6 +21,6 @@ namespace PAL
 		virtual void RecordCommand(const std::function<void()>& command) = 0;
 
 		virtual void WaitForIdle() = 0;
-		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) = 0;
+		virtual void ResizeFrameBuffer(bool resize = false, int width = 0, int height = 0) = 0;
 	};
 }

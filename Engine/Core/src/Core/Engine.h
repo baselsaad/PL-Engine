@@ -6,7 +6,13 @@
 namespace PAL
 {
 	class VulkanAPI;
+	class Renderer;
+	class World;
 
+	enum class EngineStates
+	{
+		Render, UpdateAndRender, Idle
+	};
 
 	class Engine
 	{
@@ -14,24 +20,33 @@ namespace PAL
 		Engine(/*specs*/);
 		inline static Engine* Get() { return s_Instance; }
 
-		virtual void EngineLoop();
-
-		void SetupEventCallbacks();
-		void OnResizeWindow(const ResizeWindowEvent& event);
-		void OnCloseWindow(const CloseWindowEvent& event);
+		// Start the engine main loop and load resources we need 
+		virtual void Run();
+		// Stop and free 
+		virtual void Stop();
 
 		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
 		inline EventHandler& GetInputHandler() { return m_EventHandler; }
 
 	private:
-		DeltaTime m_DeltaTime;
+		virtual void EngineLoop();
+		void OnEvent(Event& e);
+		void OnResizeWindow(const ResizeWindowEvent& event);
+		void OnResizeFrameBuffer(const ResizeFrameBufferEvent& event); // TODO: move later to editor
+		void OnCloseWindow(const CloseWindowEvent& event);
+		void OnKeyPressed(const KeyPressedEvent& event);
 
+	private:
 		static Engine* s_Instance;
 
+		SharedPtr<Renderer> m_Renderer;
+		SharedPtr<World> m_World;
 		UniquePtr<Window> m_Window;
-		bool m_ShouldCloseWindow;
 
+		DeltaTime m_DeltaTime;
+		EngineStates m_EngineState;
 		EventHandler m_EventHandler;
-		std::function<void(Event&)> m_EventCallback;
+
+		bool m_ShouldCloseWindow;
 	};
 }

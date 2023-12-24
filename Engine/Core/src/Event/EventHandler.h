@@ -4,7 +4,7 @@
 namespace PAL
 {
 	using EventCallback = std::function<void(const Event&)>;
-	// @TODO: BindActions and Axsis
+	// @TODO: BindActions and Axis
 
 	class EventHandler
 	{

@@ -6,6 +6,7 @@ namespace PAL
 {
 	class Camera;
 	class Entity;
+	class Renderer;
 
 	class World
 	{
@@ -15,11 +16,13 @@ namespace PAL
 
 		void BeginPlay();
 		void OnUpdate(float deltaTime);
+		void OnRender(float deltaTime, const SharedPtr<Renderer>& renderer);
 		void EndPlay();
 
 		template<typename ComponentType>
 		void RegisterComponent(Entity* entity);
 
+		//TODO: remove later
 		// Create New Entity
 		EntityID OnCreateNewEntity();
 
@@ -29,7 +32,7 @@ namespace PAL
 		template<typename ComponentType>
 		ComponentType& RegisterComponentInternal(EntityID entityId)
 		{
-			// do not store a ref to the component, it will invalid when resizing the pool when adding new components 
+			// do not store a ref to the component, it will be invalid while resizing the pool when adding new components 
 			ComponentType& newComponent = m_RegisteredComponents.emplace<ComponentType>(entityId);
 			return newComponent;
 		}

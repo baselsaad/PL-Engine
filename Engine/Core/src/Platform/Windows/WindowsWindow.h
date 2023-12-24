@@ -13,6 +13,7 @@ namespace PAL
 		virtual ~WindowsWindow();
 		virtual void Close() override;
 
+		virtual void SetupEventCallback(EventFunc&& callback) override;
 		virtual void SwapBuffers() override;
 		virtual void PollEvents() override;
 		virtual void SetVsync(bool enable) override;
@@ -29,6 +30,8 @@ namespace PAL
 
 		virtual void WaitEvents() override;
 		virtual void GetFramebufferSize(int& width, int& height) override;
+		virtual void SetScreenMode(WindowMode mode) override;
+		virtual WindowMode GetWindowMode() override { return m_WindowData.Mode; }
 
 		virtual bool ShouldClose() override;
 
@@ -38,5 +41,7 @@ namespace PAL
 	private:
 		GLFWwindow* m_WindowHandle;
 		WindowData m_WindowData;
+
+		EventFunc m_EventCallback;
 	};
 }

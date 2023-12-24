@@ -24,7 +24,7 @@ namespace PAL
 		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) override;
 		
 		virtual void WaitForIdle() override;
-		virtual void OnResizeWindow(bool resize = false, int width = 0, int height = 0) override;
+		virtual void ResizeFrameBuffer(bool resize = false, int width = 0, int height = 0) override;
 
 		virtual void RecordCommand(const std::function<void()>& drawCommand);
 

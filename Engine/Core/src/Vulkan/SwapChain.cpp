@@ -13,7 +13,7 @@
 
 namespace PAL
 {
-	VulkanSwapChain::VulkanSwapChain(const std::shared_ptr<VulkanDevice>& device)
+	VulkanSwapChain::VulkanSwapChain(const SharedPtr<VulkanDevice>& device)
 		: m_Device(device)
 		, m_ImageIndex(0)
 	{
@@ -32,9 +32,9 @@ namespace PAL
 		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(phyDevice, surface);
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes, Engine::Get()->GetWindow()->IsVsyncOn());
-		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
+		m_SwapChainExtent = ChooseSwapExtent(swapChainSupport.capabilities);
 
-		//it is recommended to request at least one more image than the minimum
+		// it is recommended to request at least one more image than the minimum
 		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
 		{
@@ -46,12 +46,10 @@ namespace PAL
 		createInfo.surface = surface;
 
 		createInfo.minImageCount = imageCount;
-
 		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageExtent = extent;
+		createInfo.imageExtent = m_SwapChainExtent;
 
 		m_SwapChainImageFormat = surfaceFormat.format;
-		m_SwapChainExtent = extent;
 
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
 		createInfo.imageArrayLayers = 1;
@@ -89,6 +87,28 @@ namespace PAL
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
 		CreateSyncObjects();
+	}
+
+	void VulkanSwapChain::CreateSyncObjects()
+	{
+		m_ImageAvailableSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+		m_RenderFinishedSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+		m_InFlightFence.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
+
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		//fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		// Each Frame has it's own Semaphores and Fences
+		for (size_t i = 0; i < VulkanAPI::MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
+		}
 	}
 
 	SwapChainSupportDetails VulkanSwapChain::QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
@@ -183,7 +203,8 @@ namespace PAL
 		else
 		{
 			int width, height;
-			glfwGetFramebufferSize(*Engine::Get()->GetWindow(), &width, &height);
+			Engine::Get()->GetWindow()->GetFramebufferSize(width, height);
+			Debug::LogWarn("{0} {1}", width, height);
 
 			VkExtent2D actualExtent =
 			{
@@ -294,8 +315,8 @@ namespace PAL
 	void VulkanSwapChain::RecreateSwapChain(const SharedPtr<RenderPass>& renderPass)
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-
-		int width = 0, height = 0;
+		
+		int width, height;
 		window->GetFramebufferSize(width, height);
 		while (width == 0 || height == 0)
 		{
@@ -303,7 +324,10 @@ namespace PAL
 			window->WaitEvents();
 		}
 
-		Renderer::WaitForIdle();// wait for resources
+		Debug::Log("RecreateSwapChain\n--------------------------------------------------------------------------");
+
+		// wait for resources
+		vkDeviceWaitIdle(m_Device->GetVkDevice());
 
 		CleanupSwapChain();
 
@@ -366,26 +390,6 @@ namespace PAL
 		currentFrame = (currentFrame + 1) % VulkanAPI::MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void VulkanSwapChain::CreateSyncObjects()
-	{
-		m_ImageAvailableSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
-		m_RenderFinishedSemaphore.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
-		m_InFlightFence.resize(VulkanAPI::MAX_FRAMES_IN_FLIGHT);
-
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		//fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		// Each Frame has it's own Semaphores and Fences
-		for (size_t i = 0; i < VulkanAPI::MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
-		}
-	}
+	
 
 }

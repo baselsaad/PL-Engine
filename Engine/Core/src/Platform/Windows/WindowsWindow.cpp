@@ -3,6 +3,8 @@
 #include "Vulkan/SwapChain.h"
 #include "Vulkan/VulkanContext.h"
 #include <type_traits>
+#include "Event/Event.h"
+#include "Event/EventHandler.h"
 
 
 namespace PAL
@@ -24,12 +26,17 @@ namespace PAL
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 		m_WindowHandle = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
+		if (data.Mode == WindowMode::FullScreen)
+			SetScreenMode(WindowMode::FullScreen);
+
 		ASSERT(m_WindowHandle, "Window is null!");
 		SetVsync(data.Vsync);
 
 		// Make the window's context current
 		glfwMakeContextCurrent(m_WindowHandle);
 		HandleErrorMessages();
+
+		Debug::Log("Window Created width: {}, height: {}", GetWindowWidth(), GetWindowHeight());
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -101,6 +108,167 @@ namespace PAL
 	bool WindowsWindow::ShouldClose()
 	{
 		return glfwWindowShouldClose(m_WindowHandle);
+	}
+
+	void WindowsWindow::SetupEventCallback(EventFunc&& callback)
+	{
+		m_EventCallback = callback;
+		glfwSetWindowUserPointer(m_WindowHandle, &m_EventCallback);
+
+		//@TODO: Move to the window 
+		// Window Close 
+		{
+			auto callback = [](GLFWwindow* window)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window); // eventCallback = m_EventCallback
+				CloseWindowEvent e;
+				eventCallback(e);
+			};
+
+			glfwSetWindowCloseCallback(m_WindowHandle, callback);
+		}
+
+		// Window Resize
+		{
+			auto callback = [](GLFWwindow* window, int width, int height)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+				ResizeWindowEvent event(width, height);
+				eventCallback(event);
+			};
+
+			glfwSetWindowSizeCallback(m_WindowHandle, callback);
+			glfwSetFramebufferSizeCallback(m_WindowHandle, callback); // later for editor
+		}
+
+		// FrameBuffer Resize
+		{
+			auto callback = [](GLFWwindow* window, int width, int height)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+				ResizeFrameBufferEvent event(width, height);
+				eventCallback(event);
+			};
+
+			glfwSetFramebufferSizeCallback(m_WindowHandle, callback); // later for editor
+		}
+
+		// Mouse Buttons
+		{
+			auto callback = [](GLFWwindow* window, int button, int action, int mods)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+				double outX, outY;
+				glfwGetCursorPos(window, &outX, &outY);
+
+				switch (action)
+				{
+					case GLFW_PRESS:
+					{
+						MouseButtonPressedEvent event(button, outX, outY);
+						eventCallback(event);
+						break;
+					}
+					case GLFW_RELEASE:
+					{
+						MouseButtonReleasedEvent event(button, outX, outY);
+						eventCallback(event);
+						break;
+					}
+				}
+			};
+
+			glfwSetMouseButtonCallback(m_WindowHandle, callback);
+		}
+
+		// Mouse Move
+		{
+			auto callback = [](GLFWwindow* window, double x, double y)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+
+				MouseMoveEvent event((float)x, (float)y);
+				eventCallback(event);
+			};
+
+			glfwSetCursorPosCallback(m_WindowHandle, callback);
+		}
+
+		// Mouse Scroll
+		{
+			auto callback = [](GLFWwindow* window, double x, double y)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+
+				MouseScrolledEvent event((float)x, (float)y);
+				eventCallback(event);
+			};
+
+			glfwSetScrollCallback(m_WindowHandle, callback);
+		}
+
+		// KeyPressed
+		{
+			auto callback = [](GLFWwindow* window, int key, int scancode, int action, int mods)
+			{
+				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
+
+				switch (action)
+				{
+					case GLFW_PRESS:
+					{
+						KeyReleaseEvent event((KeyCode)key);
+						eventCallback(event);
+						break;
+					}
+					case GLFW_RELEASE:
+					{
+						KeyPressedEvent event((KeyCode)key);
+						eventCallback(event);
+						break;
+					}
+					case GLFW_REPEAT:
+					{
+						KeyRepeatEvent event((KeyCode)key);
+						eventCallback(event);
+						break;
+					}
+				}
+			};
+
+			glfwSetKeyCallback(m_WindowHandle, callback);
+		}
+	}
+
+	void WindowsWindow::SetScreenMode(WindowMode mode)
+	{
+		if (mode == WindowMode::Windowed)
+		{
+			m_WindowData.Width = 800;
+			m_WindowData.Height = 600;
+			m_WindowData.Mode = WindowMode::Windowed;
+
+			const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			// center the window
+			int xPos = (videoMode->width - m_WindowData.Width) / 2;
+			int yPos = (videoMode->height - m_WindowData.Height) / 2;
+
+			glfwSetWindowMonitor(m_WindowHandle, nullptr, xPos, yPos, m_WindowData.Width, m_WindowData.Height, GLFW_DONT_CARE);
+			
+			Debug::Log("Change window to Windowed mode: width: {}, height: {}", m_WindowData.Width, m_WindowData.Height);
+		}
+		else
+		{
+			GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+			glfwSetWindowMonitor(m_WindowHandle, primaryMonitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+			
+			m_WindowData.Width = mode->width;
+			m_WindowData.Height = mode->height;
+			m_WindowData.Mode = WindowMode::FullScreen;
+
+			Debug::Log("Change window to FullScreen mode: width: {}, height : {}", m_WindowData.Width, m_WindowData.Height);
+		}
 	}
 
 	void WindowsWindow::Close()

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Engine.h"
-#include "GLFW/glfw3.h"
+
 #include "Platform/Windows/WindowsWindow.h"
 
 #include "Vulkan/GraphhicsPipeline.h"
@@ -20,6 +20,7 @@
 #include "glm/gtc/epsilon.hpp"
 #include "Math/Math.h"
 #include "Map/World.h"
+#include "Event/Event.h"
 
 namespace PAL
 {
@@ -27,6 +28,7 @@ namespace PAL
 
 	Engine::Engine(/*specs*/)
 		: m_ShouldCloseWindow(false)
+		, m_EngineState(EngineStates::UpdateAndRender)
 	{
 		s_Instance = this;
 
@@ -35,20 +37,39 @@ namespace PAL
 		data.Height = 600;
 		data.Title = "PL Engine";
 		data.Vsync = false;
+		data.Mode = WindowMode::Windowed;
 
 		m_Window = MakeUnique<WindowsWindow>(data);
+		m_Window->SetupEventCallback(BIND_FUN(this, Engine::OnEvent));
+	}
 
-		SetupEventCallbacks();
+	void Engine::Run()
+	{
+		// init
 		m_EventHandler.BindAction(EventType::ResizeWindow, this, &Engine::OnResizeWindow);
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
+		m_EventHandler.BindAction(EventType::KeyPressed, this, &Engine::OnKeyPressed);
+		m_EventHandler.BindAction(EventType::FrameBufferResize, this, &Engine::OnResizeFrameBuffer);
 
-		Renderer::Init(RenderAPITarget::Vulkan);
+		m_Renderer = MakeShared<Renderer>();
+		m_Renderer->Init(RenderAPITarget::Vulkan);
+
+		m_World = MakeShared<World>(); // default map for now 
+		m_World->BeginPlay(); //TODO: move later, should be called from editor when press play 
+
+		EngineLoop();
+	}
+
+	void Engine::Stop()
+	{
+		m_Renderer->WaitForIdle();
+		m_Renderer->Shutdown();
+		m_Window->Close();
 	}
 
 	void Engine::EngineLoop()
 	{
-		World world;
-		world.BeginPlay();
+		SCOPE_TIMER();
 
 		while (!m_ShouldCloseWindow)
 		{
@@ -57,106 +78,44 @@ namespace PAL
 			m_DeltaTime.Update();
 			m_Window->PollEvents();
 
-			// TODO: GetWorld
-			world.OnUpdate(m_DeltaTime.GetSeconds());
+			switch (m_EngineState)
+			{
+				case PAL::EngineStates::Render:
+				{
+					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
+					break;
+				}
+				case PAL::EngineStates::UpdateAndRender:
+				{
+					m_World->OnUpdate(m_DeltaTime.GetSeconds());
+					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
+					break;
+				}
+				case PAL::EngineStates::Idle:
+				{
+					break;
+				}
+			}
 		}
-
-		Renderer::WaitForIdle();
-		Renderer::Shutdown();
-		m_Window->Close();
 	}
 
-	void Engine::SetupEventCallbacks()
+	void Engine::OnEvent(Event& e)
 	{
-		m_EventCallback = [this](Event& e) -> void { m_EventHandler.OnEvent(e); };
-		glfwSetWindowUserPointer(*m_Window, &m_EventCallback);
-
-		//@TODO: Move to the window 
-		// Window Close 
-		{
-			auto callback = [](GLFWwindow* window)
-			{
-				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window); //  eventCallback = m_EventCallback
-				CloseWindowEvent e;
-				eventCallback(e);
-			};
-
-			glfwSetWindowCloseCallback(*m_Window, callback);
-		}
-
-		// Window Resize
-		{
-			auto callback = [](GLFWwindow* window, int width, int height)
-			{
-				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
-				ResizeWindowEvent event(width, height);
-				eventCallback(event);
-			};
-
-			glfwSetWindowSizeCallback(*m_Window, callback);
-			//glfwSetFramebufferSizeCallback(*m_Window, callback); later for editor
-		}
-
-		// Mouse Buttons
-		{
-			auto callback = [](GLFWwindow* window, int button, int action, int mods)
-			{
-				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
-				double outX, outY;
-				glfwGetCursorPos(window, &outX, &outY);
-
-				switch (action)
-				{
-					case GLFW_PRESS:
-					{
-						MouseButtonPressedEvent event(button, outX, outY);
-						eventCallback(event);
-						break;
-					}
-					case GLFW_RELEASE:
-					{
-						MouseButtonReleasedEvent event(button, outX, outY);
-						eventCallback(event);
-						break;
-					}
-				}
-			};
-
-			glfwSetMouseButtonCallback(*m_Window, callback);
-		}
-
-		// Mouse Move
-		{
-			auto callback = [](GLFWwindow* window, double x, double y)
-			{
-				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
-
-				MouseMoveEvent event((float)x, (float)y);
-				eventCallback(event);
-			};
-
-			glfwSetCursorPosCallback(*m_Window, callback);
-		}
-
-		// Mouse Scroll
-		{
-			auto callback = [](GLFWwindow* window, double x, double y)
-			{
-				auto& eventCallback = *(EventCallback*)glfwGetWindowUserPointer(window);
-
-				MouseScrolledEvent event((float)x, (float)y);
-				eventCallback(event);
-			};
-
-			glfwSetScrollCallback(*m_Window, callback);
-		}
-
+		m_EventHandler.OnEvent(e);
 	}
 
 	void Engine::OnResizeWindow(const ResizeWindowEvent& event)
 	{
-		Renderer::OnResizeWindow(true, event.GetWidth(), event.GetHeight());
+		//Debug::Log("Resize Window: {}, {}", event.GetWidth(), event.GetHeight());
+
 		m_Window->OnResize(event.GetWidth(), event.GetHeight());
+	}
+
+	void Engine::OnResizeFrameBuffer(const ResizeFrameBufferEvent& event)
+	{
+		//Debug::Log("Resize Framebuffer: {}, {}", event.GetWidth(), event.GetHeight());
+
+		m_Renderer->ResizeFrameBuffer(true, event.GetWidth(), event.GetHeight());
 	}
 
 	void Engine::OnCloseWindow(const CloseWindowEvent& event)
@@ -164,4 +123,14 @@ namespace PAL
 		m_ShouldCloseWindow = true;
 	}
 
+	void Engine::OnKeyPressed(const KeyPressedEvent& event)
+	{
+		if (event.GetPressedKey() == KeyCode::Escape)
+		{
+			if (m_Window->GetWindowMode() == WindowMode::FullScreen)
+				m_Window->SetScreenMode(WindowMode::Windowed);
+			else
+				m_Window->SetScreenMode(WindowMode::FullScreen);
+		}
+	}
 }

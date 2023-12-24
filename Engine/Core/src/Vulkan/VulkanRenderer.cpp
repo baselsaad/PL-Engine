@@ -52,7 +52,7 @@ namespace PAL
 		vkDeviceWaitIdle(VulkanContext::GetVulkanDevice()->GetVkDevice());
 	}
 
-	void VulkanAPI::OnResizeWindow(bool resize /*= false*/, int width /*= 0*/, int height /*= 0*/)
+	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, int width /*= 0*/, int height /*= 0*/)
 	{
 		s_ResizeFrameBuffer = resize;
 	}

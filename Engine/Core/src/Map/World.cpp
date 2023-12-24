@@ -48,6 +48,10 @@ namespace PAL
 		Entity entityTest(this);
 		entityTest.SetColor(Colors::Orange);
 
+		Entity entityTest2(this);
+		entityTest2.SetColor(Colors::Blue);
+		entityTest2.GetTransform().Translation.x = 2.0f;
+
 		if (m_ActiveCamera == nullptr)
 		{
 			m_ActiveCamera = MakeShared<OrthographicCamera>(Engine::Get()->GetWindow()->GetAspectRatio());
@@ -59,20 +63,22 @@ namespace PAL
 
 	void World::OnUpdate(float deltaTime)
 	{
+		// Update Script and physics later		
+	}
 
-		// RenderComponent
+	void World::OnRender(float deltaTime, const SharedPtr<Renderer>& renderer)
+	{
+		m_ActiveCamera->OnUpdate(deltaTime);
+
+		renderer->StartFrame(*m_ActiveCamera);
+
+		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
+		for (auto [entity, transform, renderComponent] : view.each())
 		{
-			m_ActiveCamera->OnUpdate(deltaTime);
-			Renderer::StartFrame(*m_ActiveCamera);
-
-			auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
-			for (auto [entity, transform, renderComponent] : view.each())
-			{
-				Renderer::DrawQuad(transform, renderComponent.GetColor());
-			}
-
-			Renderer::EndFrame();
+			renderer->DrawQuad(transform, renderComponent.GetColor());
 		}
+
+		renderer->EndFrame();
 	}
 
 	void World::EndPlay()
@@ -85,7 +91,7 @@ namespace PAL
 	{
 		static_assert(false, "Unknown ComponentType");
 	}
-	
+
 	template<>
 	void World::RegisterComponent<TransformComponent>(Entity* entity)
 	{

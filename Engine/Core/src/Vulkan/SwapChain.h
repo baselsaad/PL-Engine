@@ -20,16 +20,17 @@ namespace PAL
 	public:
 		VulkanSwapChain() = default;
 		~VulkanSwapChain();
-		VulkanSwapChain(const std::shared_ptr<VulkanDevice>& device);
+		VulkanSwapChain(const SharedPtr<VulkanDevice>& device);
 
 		void Create();
+		void CreateSyncObjects();
+
 		void CreateImageViews();
 		void CreateFramebuffers(VkRenderPass renderPass);
 		void CleanupSwapChain();
 		void RecreateSwapChain(const SharedPtr<RenderPass>& renderPass);
 		void PresentFrame(const SharedPtr<RenderPass>& renderpass, const SharedPtr<CommandBuffer>& commandBuffer);
-
-		void CreateSyncObjects();
+		
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -46,7 +47,7 @@ namespace PAL
 		inline const std::vector<VkFence>& GetInFlightFence() { return m_InFlightFence; }
 		inline const uint32_t& GetImageIndex() { return m_ImageIndex; }
 	private:
-		std::shared_ptr<VulkanDevice> m_Device;
+		SharedPtr<VulkanDevice> m_Device;
 
 		VkSwapchainKHR m_SwapChain;
 		std::vector<VkImage> m_SwapChainImages;

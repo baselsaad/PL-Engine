@@ -4,6 +4,12 @@
 namespace PAL
 {
 	class VulkanSwapChain;
+	class Event;
+
+	enum class WindowMode
+	{
+		FullScreen, Windowed
+	};
 
 	struct WindowData
 	{
@@ -11,11 +17,13 @@ namespace PAL
 		uint32_t Height;
 		std::string Title;
 		bool Vsync;
+		WindowMode Mode;
 	};
 
 	class Window
 	{
 	public:
+
 		virtual ~Window() {}
 
 		virtual void Close() = 0;
@@ -23,12 +31,16 @@ namespace PAL
 		virtual bool ShouldClose() = 0;
 		virtual bool IsVsyncOn() const = 0;
 
-
+		using EventFunc = std::function<void(Event& e)>;
+		virtual void SetupEventCallback(EventFunc&& callback) = 0;
 		virtual void SwapBuffers() = 0;
 		virtual void PollEvents() = 0;
 		virtual void WaitEvents() = 0;
 		virtual void SetVsync(bool enable) = 0;
-
+		
+		virtual void SetScreenMode(WindowMode mode) = 0;
+		virtual WindowMode GetWindowMode() = 0;
+	
 		virtual void OnResize(int width, int height) = 0;
 		virtual void GetFramebufferSize(int& width, int& height) = 0;
 

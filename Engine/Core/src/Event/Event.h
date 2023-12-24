@@ -3,8 +3,11 @@
 
 namespace PAL
 {
-
-
+#define BIND_FUN(obj, fun)											\
+[&] (auto&&... args)												\
+{																	\
+	obj->fun(std::forward<decltype(args)>(args)...);				\
+}
 
 	enum class MouseButtonKey : uint16_t
 	{
@@ -151,12 +154,16 @@ namespace PAL
 	{
 		CloseWindow = 0,
 		ResizeWindow,
+		FrameBufferResize,
 		MouseButton,
 		MouseButtonPressed,
 		MouseButtonReleased,
 		MouseMiddleButtone,
 		MouseScrolled,
-		MouseMove
+		MouseMove,
+		KeyRelease,
+		KeyPressed,
+		KeyRepeat
 	};
 
 	class Event
@@ -185,6 +192,28 @@ namespace PAL
 		virtual EventType GetEventType() override
 		{
 			return EventType::ResizeWindow;
+		}
+
+		inline int GetWidth() const { return m_Width; }
+		inline int GetHeight() const { return m_Height; }
+
+	private:
+		int m_Width, m_Height;
+
+	};
+
+	class ResizeFrameBufferEvent : public Event
+	{
+
+	public:
+		ResizeFrameBufferEvent(int width, int height)
+			: m_Width(width), m_Height(height)
+		{
+		}
+
+		virtual EventType GetEventType() override
+		{
+			return EventType::FrameBufferResize;
 		}
 
 		inline int GetWidth() const { return m_Width; }
@@ -304,6 +333,64 @@ namespace PAL
 
 	private:
 		float m_XPosition, m_YPosition;
+	};
+
+	class KeyReleaseEvent : public Event 
+	{
+	public:
+		KeyReleaseEvent(KeyCode key)
+			: m_KeyCode(key)
+		{
+		}
+		
+		KeyCode GetPressedKey() const{ return m_KeyCode; }
+		
+		virtual EventType GetEventType() override
+		{
+			return EventType::KeyRelease;
+		}
+
+	private:
+		KeyCode m_KeyCode;
+	};
+
+	class KeyPressedEvent : public Event
+	{
+	public:
+		KeyPressedEvent(KeyCode key)
+			: m_KeyCode(key)
+		{
+		}
+
+		KeyCode GetPressedKey() const { return m_KeyCode; }
+
+		virtual EventType GetEventType() override
+		{
+			return EventType::KeyPressed;
+		}
+
+	private:
+		KeyCode m_KeyCode;
+	};
+
+
+	class KeyRepeatEvent : public Event
+	{
+	public:
+		KeyRepeatEvent(KeyCode key)
+			: m_KeyCode(key)
+		{
+		}
+
+		KeyCode GetPressedKey() const { return m_KeyCode; }
+
+		virtual EventType GetEventType() override
+		{
+			return EventType::KeyRepeat;
+		}
+
+	private:
+		KeyCode m_KeyCode;
 	};
 
 }
