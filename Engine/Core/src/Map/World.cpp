@@ -6,6 +6,7 @@
 #include "Renderer/OrthographicCamera.h"
 #include "Core/Engine.h"
 #include "ECS.h"
+#include "Utilities/Timer.h"
 
 
 namespace PAL
@@ -45,6 +46,8 @@ namespace PAL
 
 	void World::BeginPlay()
 	{
+		CORE_PROFILER_FUNC();
+
 		Entity entityTest(this);
 		entityTest.SetColor(Colors::Orange);
 
@@ -63,11 +66,15 @@ namespace PAL
 
 	void World::OnUpdate(float deltaTime)
 	{
+		CORE_PROFILER_FUNC();
+
 		// Update Script and physics later		
 	}
 
 	void World::OnRender(float deltaTime, const SharedPtr<Renderer>& renderer)
 	{
+		CORE_PROFILER_FUNC();
+
 		m_ActiveCamera->OnUpdate(deltaTime);
 
 		renderer->StartFrame(*m_ActiveCamera);
@@ -83,6 +90,7 @@ namespace PAL
 
 	void World::EndPlay()
 	{
+		CORE_PROFILER_FUNC();
 
 	}
 

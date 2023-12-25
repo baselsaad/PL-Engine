@@ -4,8 +4,8 @@ project "Core"
 	cppdialect "C++17"
 	staticruntime "on"
 
-	targetdir ("%{wks.location}/Binaries/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/Intermediate/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/Binaries/Engine/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/Intermediate/Engine/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "pch.h"
 	pchsource "src/pch.cpp"
@@ -40,12 +40,10 @@ project "Core"
 		"ENGINE_ROOT=\"" .. EngineRoot .. "\""
 	}
 
-	defines {  }
-
 	includedirs
 	{
-		"src",
-		"vendor/",
+		"%{wks.location}/Engine/Core/src",
+		"%{wks.location}/Engine/Core/vendor",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.GLFW}",
@@ -53,6 +51,8 @@ project "Core"
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.Instrumentation}",
 		"%{IncludeDir.ECS}",
+		"%{IncludeDir.VulkanMemoryAllocator}",
+		"%{IncludeDir.Optick}",
 		"%{IncludeDir.stb_image}"
 	}
 
@@ -60,8 +60,9 @@ project "Core"
 	{ 
 		"GLFW",
 		"ImGui",
+		"Optick",
 		"%{Library.Vulkan}",
-		--"%{Library.VulkanUtils}"
+		"%{Library.VulkanUtils}"
 	}
 
 	filter "system:windows"

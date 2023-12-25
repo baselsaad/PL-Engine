@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include <VulkanMemoryAllocator-3.0.1/include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 /*
 	#include "GraphhicsPipeline.h"

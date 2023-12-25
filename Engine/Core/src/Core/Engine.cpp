@@ -30,6 +30,8 @@ namespace PAL
 		: m_ShouldCloseWindow(false)
 		, m_EngineState(EngineStates::UpdateAndRender)
 	{
+		CORE_PROFILER_FUNC();
+
 		s_Instance = this;
 
 		WindowData data{};
@@ -45,6 +47,8 @@ namespace PAL
 
 	void Engine::Run()
 	{
+		CORE_PROFILER_FUNC();
+
 		// init
 		m_EventHandler.BindAction(EventType::ResizeWindow, this, &Engine::OnResizeWindow);
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
@@ -62,6 +66,8 @@ namespace PAL
 
 	void Engine::Stop()
 	{
+		CORE_PROFILER_FUNC();
+
 		m_Renderer->WaitForIdle();
 		m_Renderer->Shutdown();
 		m_Window->Close();
@@ -69,11 +75,9 @@ namespace PAL
 
 	void Engine::EngineLoop()
 	{
-		SCOPE_TIMER();
-
 		while (!m_ShouldCloseWindow)
 		{
-			SCOPE_TIMER_NAME("Frame");
+			CORE_PROFILER_FRAME("CPU-Frame");
 
 			m_DeltaTime.Update();
 			m_Window->PollEvents();

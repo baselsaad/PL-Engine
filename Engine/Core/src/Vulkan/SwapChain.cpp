@@ -357,7 +357,7 @@ namespace PAL
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		{
-			SCOPE_TIMER("GPU Frame");
+			CORE_PROFILER_SCOPE("GPU Frame");
 
 			VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[currentFrame])); // execution of the recorded commands
 			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[currentFrame], VK_TRUE, UINT64_MAX)); // wait for GPU to complete

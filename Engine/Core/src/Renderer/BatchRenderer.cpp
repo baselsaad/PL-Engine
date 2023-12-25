@@ -95,6 +95,8 @@ namespace PAL
 
 	void BatchRenderer::FindOrCreateNewQuadBatch()
 	{
+		CORE_PROFILER_FUNC();
+
 		int currentFrame = VulkanAPI::GetCurrentFrame();
 
 		m_QuadBatchingData.IndexCount = 0;
@@ -110,7 +112,7 @@ namespace PAL
 
 	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec3& color)
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		constexpr size_t quadVertexCount = 4;
 		for (size_t i = 0; i < quadVertexCount; i++)
@@ -125,7 +127,7 @@ namespace PAL
 
 	void BatchRenderer::AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)//calculate TransformationMatrix in GPU 
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		//constexpr size_t quadVertexCount = 4;
 		//for (size_t i = 0; i < quadVertexCount; i++)

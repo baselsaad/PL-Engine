@@ -17,7 +17,7 @@ namespace PAL
 
 	void Renderer::Init(RenderAPITarget target)
 	{
-		SCOPE_TIMER("Init Renderer");
+		CORE_PROFILER_FUNC();
 
 		switch (target)
 		{
@@ -37,7 +37,8 @@ namespace PAL
 
 	void Renderer::Shutdown()
 	{
-		SCOPE_TIMER("Renderer Renderer");
+		CORE_PROFILER_FUNC();
+
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		delete m_BatchRenderer;
@@ -46,7 +47,7 @@ namespace PAL
 
 	void Renderer::StartFrame(const Camera& camera)
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
@@ -58,7 +59,7 @@ namespace PAL
 
 	void Renderer::Flush()
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		// Quads
 		m_BatchRenderer->BindCurrentQuadBatch();
@@ -69,7 +70,7 @@ namespace PAL
 
 	void Renderer::EndFrame()
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
@@ -85,7 +86,7 @@ namespace PAL
 
 	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 		if (m_BatchRenderer->ShouldDrawCurrentBatch())
@@ -106,7 +107,7 @@ namespace PAL
 
 	void Renderer::DrawQuad(const TransformComponent& transform, const glm::vec3& color)
 	{
-		SCOPE_TIMER();
+		CORE_PROFILER_FUNC();
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 		if (m_BatchRenderer->ShouldDrawCurrentBatch())

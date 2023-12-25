@@ -5,8 +5,8 @@ project "Editor"
 	cppdialect "C++17"
 	staticruntime "on"
 
-	targetdir ("%{wks.location}/Binaries/" .. outputdir .. "/%{prj.name}")
-	objdir ("%{wks.location}/Intermediate/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/Binaries/Engine/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/Intermediate/Engine/" .. outputdir .. "/%{prj.name}")
 
 	defines
 	{
@@ -32,6 +32,8 @@ project "Editor"
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.Instrumentation}",
+		"%{IncludeDir.Instrumentation}",
+		"%{IncludeDir.Optick}",
 		"%{IncludeDir.stb_image}"
 	}
 

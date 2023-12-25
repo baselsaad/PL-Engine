@@ -1,5 +1,9 @@
 #pragma once
 #include "InstrumentationTimer.h"
+#include "optick.h"
+
+#define PROFILE_TO_JSON 0
+#define PROFILE_TO_OPTICK 1
 
 class Timer
 {
@@ -36,18 +40,38 @@ private:
 #define FUNC_NAME "__FUNCSIG__ not supported in your Compiler"
 #endif
 
-#if 0
-#define BEGIN_PROFILE_SESSION(name)	Instrumentor::Get().BeginSession(name)
-#define END_PROFILE_SESSION()		Instrumentor::Get().EndSession()
 
-#define SCOPE_TIMER_NAME(name) InstrumentationTimer timer(name)
-#define SCOPE_TIMER() SCOPE_TIMER_NAME(FUNC_NAME)
+#if PROFILE_TO_JSON
+
+#define BEGIN_PROFILE_SESSION(name)             Instrumentor::Get().BeginSession(name)
+#define END_PROFILE_SESSION()                   Instrumentor::Get().EndSession()
+
+#define CORE_PROFILER_TAG(TAG)                  InstrumentationTimer timer(TAG)
+#define CORE_PROFILER_FUNC()                    CORE_PROFILER_TAG(FUNC_NAME)
+#define CORE_PROFILER_SCOPE(TAG)                CORE_PROFILER_TAG(TAG)
+#define CORE_PROFILER_SCOPE_DYNAMIC(TAG)        CORE_PROFILER_TAG(TAG)
+#define CORE_PROFILER_FRAME(TAG)                CORE_PROFILER_TAG(TAG)
+
+#elif PROFILE_TO_OPTICK
+
+#define BEGIN_PROFILE_SESSION(name)	
+#define END_PROFILE_SESSION()		
+
+#define CORE_PROFILER_TAG(TAG, ...)				OPTICK_TAG(TAG, __VA_ARGS__)
+#define CORE_PROFILER_FUNC()					OPTICK_EVENT()
+#define CORE_PROFILER_SCOPE(TAG)                OPTICK_EVENT(TAG)
+#define CORE_PROFILER_SCOPE_DYNAMIC(TAG)        OPTICK_EVENT_DYNAMIC(TAG)
+#define CORE_PROFILER_FRAME(TAG)                OPTICK_FRAME(TAG)
 
 #else 
-#define BEGIN_PROFILE_SESSION(name)	
-#define END_PROFILE_SESSION()	
 
-#define SCOPE_TIMER_NAME(name)
-#define SCOPE_TIMER()
+#define BEGIN_PROFILE_SESSION(name)	
+#define END_PROFILE_SESSION()		
+
+#define CORE_PROFILER_TAG(TAG)			
+#define CORE_PROFILER_FUNC()	
+#define CORE_PROFILER_SCOPE(TAG)
+#define CORE_PROFILER_SCOPE_DYNAMIC(TAG)    
+#define CORE_PROFILER_FRAME(TAG)			
 #endif
 
