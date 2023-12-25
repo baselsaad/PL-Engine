@@ -57,8 +57,8 @@ private:
 #define BEGIN_PROFILE_SESSION(name)	
 #define END_PROFILE_SESSION()		
 
-#define CORE_PROFILER_TAG(TAG, ...)				OPTICK_TAG(TAG, __VA_ARGS__)
-#define CORE_PROFILER_FUNC()					OPTICK_EVENT()
+#define CORE_PROFILER_TAG(TAG, ...)             OPTICK_TAG(TAG, __VA_ARGS__)
+#define CORE_PROFILER_FUNC()                    OPTICK_EVENT()
 #define CORE_PROFILER_SCOPE(TAG)                OPTICK_EVENT(TAG)
 #define CORE_PROFILER_SCOPE_DYNAMIC(TAG)        OPTICK_EVENT_DYNAMIC(TAG)
 #define CORE_PROFILER_FRAME(TAG)                OPTICK_FRAME(TAG)
