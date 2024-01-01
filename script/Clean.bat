@@ -1,5 +1,5 @@
 @echo off
 pushd ..\
-call script\premake\premake5.exe clean
+call Script\premake\premake5.exe --file=Build.lua clean
 popd
 PAUSE

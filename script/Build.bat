@@ -1,5 +1,5 @@
 @echo off
 pushd ..\
-call script\premake\premake5.exe vs2022
+call Script\premake\premake5.exe --file=Build.lua vs2022
 popd
 PAUSE
