@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanAPI.h"
+#include "CommandBuffer.h"
 
 namespace PAL
 {
@@ -48,11 +49,17 @@ namespace PAL
 	public:
 		VulkanDevice(const SharedPtr<VulkanPhysicalDevice>& vulkanDevice);
 
+		void Shutdown();
+
 		inline VkDevice GetVkDevice() { return m_Device; }
 		inline const SharedPtr<VulkanPhysicalDevice>& GetPhysicalDevice() { return m_PhysicalDevice; }
 
 		inline VkQueue GetVkGraphicsQueue() { return m_GraphicsQueue; }
 		inline VkQueue GetVkPresentQueue() { return m_PresentQueue; }
+
+		void CreateMainCommandBuffer();
+		inline SharedPtr<CommandBuffer>& GetMainCommandBuffer() { return m_CommandBuffer; }
+		inline VkCommandBuffer GetCurrentCommandBuffer() const { return m_CommandBuffer->GetCurrentCommandBuffer(); }
 
 	private:
 		VkDevice m_Device;
@@ -60,6 +67,8 @@ namespace PAL
 		VkQueue m_PresentQueue;
 
 		SharedPtr<VulkanPhysicalDevice> m_PhysicalDevice;
+
+		SharedPtr<CommandBuffer> m_CommandBuffer; // main CommandBuffer
 	};
 }
 

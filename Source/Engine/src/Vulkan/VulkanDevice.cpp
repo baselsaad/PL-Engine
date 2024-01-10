@@ -185,6 +185,16 @@ namespace PAL
 		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
 	}
 
+	void VulkanDevice::Shutdown()
+	{
+		m_CommandBuffer->Shutdown();
+	}
+
+	void VulkanDevice::CreateMainCommandBuffer()
+	{
+		m_CommandBuffer = NewShared<CommandBuffer>();
+	}
+
 	//-------------------------------------------------------------------------------------------------------------
 }
 

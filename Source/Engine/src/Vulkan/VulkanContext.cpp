@@ -120,6 +120,7 @@ namespace PAL
 
 		s_VulkanPhysicalDevice = NewShared<VulkanPhysicalDevice>();
 		s_VulkanDevice = NewShared<VulkanDevice>(s_VulkanPhysicalDevice);
+		s_VulkanDevice->CreateMainCommandBuffer();
 
 		Debug::Info("GPU: {}", s_VulkanPhysicalDevice->GetDeviceName());
 		Debug::Info("Vendor: {}", s_VulkanPhysicalDevice->GetVendor());
@@ -131,12 +132,12 @@ namespace PAL
 #if DEBUG
 		DestroyDebugUtilsMessengerEXT(s_VulkanInstance, s_DebugMessenger, nullptr);
 #endif
+
+		s_VulkanDevice->Shutdown();
 		s_SwapChain->CleanupSwapChain();
 		vkDestroyDevice(s_VulkanDevice->GetVkDevice(), nullptr);
 		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
 		vkDestroyInstance(s_VulkanInstance, nullptr);
-
-		
 	}
 
 	void VulkanContext::SetupDebugMessenger()

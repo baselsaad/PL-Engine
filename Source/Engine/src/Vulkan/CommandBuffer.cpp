@@ -45,4 +45,18 @@ namespace PAL
 		allocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, m_CommandBuffers.data()));
 	}
+
+	VkCommandBuffer CommandBuffer::CreateSecondaryCommandBuffer() const
+	{
+		VkCommandBuffer cmdBuffer;
+
+		VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmdBufAllocateInfo.commandPool = m_CommandPool;
+		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		cmdBufAllocateInfo.commandBufferCount = 1;
+
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &cmdBufAllocateInfo, &cmdBuffer));
+		return cmdBuffer;
+	}
 }

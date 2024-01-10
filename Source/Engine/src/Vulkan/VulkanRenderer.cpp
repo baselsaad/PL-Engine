@@ -16,6 +16,7 @@
 #include "IndexBuffer.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Utilities/Timer.h"
+#include "../../Editor/src/Editor.h"
 
 namespace PAL
 {
@@ -26,16 +27,16 @@ namespace PAL
 	{
 		VulkanContext::Init();
 		VulkanContext::CreateVulkanSwapChain();
+		m_Device = VulkanContext::GetVulkanDevice();
 
 		m_RenderPass = NewShared<RenderPass>(VulkanContext::GetVulkanDevice());
-		m_Pipline = NewShared<PipeLine>(m_RenderPass);
 		VulkanContext::GetSwapChain()->CreateFramebuffers(m_RenderPass->GetVkRenderPass());
-		m_CommandBuffer = NewShared<CommandBuffer>();
+
+		m_Pipline = NewShared<PipeLine>(m_RenderPass);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
-		m_CommandBuffer->Shutdown();
 		m_Pipline->Shutdown();
 		m_RenderPass->Shutdown();
 
@@ -58,28 +59,39 @@ namespace PAL
 		m_Commands.push_back(command);
 	}
 
+	void VulkanAPI::PresentFrame()
+	{
+		//VulkanContext::GetSwapChain()->TransitionImageLayout(m_CommandBuffer->GetCommandPool(), VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_Device->GetMainCommandBuffer());
+	}
+
 	void VulkanAPI::BeginFrame()
 	{
 		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
-		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
 
 		// TODO: Move later
 		{
 			VulkanContext::GetSwapChain()->AcquireNextImage(m_RenderPass);
-			vkResetCommandBuffer(commandBuffers[s_CurrentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+			//VulkanContext::GetSwapChain()->TransitionImageLayout(m_CommandBuffer->GetCommandPool(), VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			vkResetCommandBuffer(m_Device->GetCurrentCommandBuffer(), /*VkCommandBufferResetFlagBits*/ 0);
 		}
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffers[s_CurrentFrame], &beginInfo));
-
-		vkCmdBindPipeline(commandBuffers[s_CurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipline->GetGraphicsPipeline());
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		VK_CHECK_RESULT(vkBeginCommandBuffer(m_Device->GetCurrentCommandBuffer(), &beginInfo));
 	}
 
 	void VulkanAPI::EndFrame()
 	{
+		VK_CHECK_RESULT(vkEndCommandBuffer(m_Device->GetCurrentCommandBuffer()));
+	}
+
+	void VulkanAPI::FlushDrawCommands()
+	{
 		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
-		const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
+
+		vkCmdBindPipeline(m_Device->GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipline->GetGraphicsPipeline());
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -88,23 +100,25 @@ namespace PAL
 		viewport.height = static_cast<float>(swapchain->GetSwapChainExtent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffers[s_CurrentFrame], 0, 1, &viewport);
+		vkCmdSetViewport(m_Device->GetCurrentCommandBuffer(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = swapchain->GetSwapChainExtent();
-		vkCmdSetScissor(commandBuffers[s_CurrentFrame], 0, 1, &scissor);
-		
-		// CommandBuffer
-		m_RenderPass->Begin(commandBuffers[s_CurrentFrame], swapchain->GetImageIndex());
-		{
-			//Timer scopeTimer("ExcuteDrawCommands");
-			ExcuteDrawCommands();
-		}
-		m_RenderPass->End(commandBuffers[s_CurrentFrame]);
+		vkCmdSetScissor(m_Device->GetCurrentCommandBuffer(), 0, 1, &scissor);
 
-		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[s_CurrentFrame]));
-		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_CommandBuffer); //Move later the main loop 
+		m_RenderPass->Begin(m_Device->GetCurrentCommandBuffer(), swapchain->GetImageIndex());
+		{
+			// Execute Draw Commands
+			for (auto& func : m_Commands)
+			{
+				if (func)
+					func();
+			}
+
+			m_Commands.clear();
+		}
+		m_RenderPass->End(m_Device->GetCurrentCommandBuffer());
 	}
 
 	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
@@ -112,32 +126,19 @@ namespace PAL
 		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
 		{
 			const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
-			const auto& commandBuffers = m_CommandBuffer->GetCommandBuffers();
 
 			// Bind VertexBuffer
 			VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffers[s_CurrentFrame], 0, 1, vertexBuffers, offsets);
+			vkCmdBindVertexBuffers(m_Device->GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
 
 			// Bind IndexBuffer
-			vkCmdBindIndexBuffer(commandBuffers[s_CurrentFrame], indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdPushConstants(commandBuffers[s_CurrentFrame], m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
-			vkCmdDrawIndexed(commandBuffers[s_CurrentFrame], indexCount, 1, 0, 0, 0);
+			vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
+			vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
 		};
 
 		RecordCommand(drawCommand);
-	}
-
-	void VulkanAPI::ExcuteDrawCommands()
-	{
-		for (auto& func : m_Commands)
-		{
-			if (func)
-				func();
-		}
-
-		m_Commands.clear();
-		//m_Commands.resize(100);
 	}
 
 }

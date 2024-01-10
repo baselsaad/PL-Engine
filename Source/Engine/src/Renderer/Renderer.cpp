@@ -23,15 +23,14 @@ namespace PAL
 		{
 			case PAL::RenderAPITarget::Vulkan:	m_RenderAPI = NewShared<VulkanAPI>();		break;
 			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
+			
 			default:							ASSERT(false, "");							break;
 		}
 
 		m_RenderAPI->Init();
 		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
 
-		//@TODO: Move later GetCommandBuffer
-		auto cmdBuffer = static_cast<VulkanAPI*>((VulkanAPI*)m_RenderAPI.get())->GetCommandBuffer();
-		m_BatchRenderer = new BatchRenderer(cmdBuffer);
+		m_BatchRenderer = new BatchRenderer(VulkanContext::GetVulkanDevice()->GetMainCommandBuffer());
 	}
 
 	void Renderer::Shutdown()
@@ -44,13 +43,13 @@ namespace PAL
 		m_RenderAPI->Shutdown();
 	}
 
-	void Renderer::StartFrame(const Camera& camera)
+	void Renderer::StartFrame()
 	{
 		CORE_PROFILER_FUNC();
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		m_Projection = camera.GetModellViewProjection();
+		//m_Projection = camera.GetModellViewProjection();
 
 		m_RenderAPI->BeginFrame();
 		m_BatchRenderer->Begin();
@@ -81,6 +80,13 @@ namespace PAL
 		//	<< ", VertexBufferCount: " << s_RenderStats.VertexBufferCount << " * 3\n";
 
 		s_RenderStats.Reset();
+	}
+
+	void Renderer::FlushDrawCommands()
+	{
+		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+
+		m_RenderAPI->FlushDrawCommands();
 	}
 
 	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)
@@ -137,4 +143,10 @@ namespace PAL
 	{
 		m_RenderAPI->ResizeFrameBuffer(resize);
 	}
+
+	void Renderer::PresentFrame()
+	{
+		m_RenderAPI->PresentFrame();
+	}
+
 }

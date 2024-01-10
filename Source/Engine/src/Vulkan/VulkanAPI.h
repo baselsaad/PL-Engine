@@ -40,6 +40,9 @@ namespace PAL
 
 		VmaAllocation AllocateBuffer(VkBufferCreateInfo bufferCreateInfo, VmaMemoryUsage usage, VkBuffer& outBuffer);
 		void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation);
+
+		void DestroyImage(VkImage image, VmaAllocation allocation);
+		
 		
 		template<typename T>
 		T* MapMemory(VmaAllocation allocation)
@@ -51,6 +54,7 @@ namespace PAL
 
 		void UnmapMemory(VmaAllocation allocation);
 
+		VmaAllocation AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage);
 	private:
 		static VmaAllocator s_Allocator;
 		static uint64_t s_TotalAllocatedBytes;

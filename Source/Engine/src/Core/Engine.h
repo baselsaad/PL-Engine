@@ -8,6 +8,7 @@ namespace PAL
 	class VulkanAPI;
 	class Renderer;
 	class World;
+	class EngineArgs;
 
 	enum class EngineStates
 	{
@@ -17,7 +18,9 @@ namespace PAL
 	class Engine
 	{
 	public:
-		Engine(/*specs*/);
+		Engine() = default;
+		Engine(const EngineArgs& engineArgs);
+		
 		inline static Engine* Get() { return s_Instance; }
 
 		// Start the engine main loop and load resources we need 
@@ -27,6 +30,7 @@ namespace PAL
 
 		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
 		inline EventHandler& GetInputHandler() { return m_EventHandler; }
+		inline SharedPtr<Renderer>& GetRenderer() { return m_Renderer; }
 
 	private:
 		virtual void EngineLoop();

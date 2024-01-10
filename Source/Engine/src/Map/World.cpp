@@ -7,6 +7,7 @@
 #include "Core/Engine.h"
 #include "ECS.h"
 #include "Utilities/Timer.h"
+#include "../../Editor/src/Editor.h"
 
 
 namespace PAL
@@ -76,22 +77,18 @@ namespace PAL
 		CORE_PROFILER_FUNC();
 
 		m_ActiveCamera->OnUpdate(deltaTime);
-
-		renderer->StartFrame(*m_ActiveCamera);
+		renderer->SetProjection(m_ActiveCamera->GetModellViewProjection());
 
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
 		for (auto [entity, transform, renderComponent] : view.each())
 		{
 			renderer->DrawQuad(transform, renderComponent.GetColor());
 		}
-
-		renderer->EndFrame();
 	}
 
 	void World::EndPlay()
 	{
 		CORE_PROFILER_FUNC();
-
 	}
 
 	template<typename ComponentType>

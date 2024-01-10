@@ -45,7 +45,7 @@ project "Engine"
 		"%{wks.location}/Source/Engine/src",
 		"%{wks.location}/Source/Engine/vendor",
 		"%{IncludeDir.spdlog}",
-		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.imgui}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",

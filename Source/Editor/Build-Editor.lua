@@ -26,13 +26,15 @@ project "Editor"
 	{
 		"src",
 		"%{wks.location}/Source/Engine/src",
+		"%{wks.location}/Source/Engine/vendor",
 		"%{IncludeDir.spdlog}",
-		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.imgui}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.Instrumentation}",
-		"%{IncludeDir.Instrumentation}",
+		"%{IncludeDir.ECS}",
+		"%{IncludeDir.VulkanMemoryAllocator}",
 		"%{IncludeDir.Optick}",
 		"%{IncludeDir.stb_image}"
 	}

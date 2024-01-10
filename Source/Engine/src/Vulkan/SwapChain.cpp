@@ -87,6 +87,57 @@ namespace PAL
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
 		CreateSyncObjects();
+
+		
+		// RenderPass
+		{
+			// color RT
+			VkAttachmentDescription attachments[1];
+			attachments[0].format = GetSwapChainImageFormat();
+			attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			attachments[0].flags = 0;
+
+			VkAttachmentReference color_reference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+			VkSubpassDescription subpass = {};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.flags = 0;
+			subpass.inputAttachmentCount = 0;
+			subpass.pInputAttachments = NULL;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &color_reference;
+			subpass.pResolveAttachments = NULL;
+			subpass.pDepthStencilAttachment = NULL;
+			subpass.preserveAttachmentCount = 0;
+			subpass.pPreserveAttachments = NULL;
+
+			VkSubpassDependency dep = {};
+			dep.dependencyFlags = 0;
+			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dep.dstSubpass = 0;
+			dep.srcAccessMask = 0;
+			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+
+			VkRenderPassCreateInfo rp_info = {};
+			rp_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+			rp_info.pNext = NULL;
+			rp_info.attachmentCount = 1;
+			rp_info.pAttachments = attachments;
+			rp_info.subpassCount = 1;
+			rp_info.pSubpasses = &subpass;
+			rp_info.dependencyCount = 1;
+			rp_info.pDependencies = &dep;
+
+			VK_CHECK_RESULT(vkCreateRenderPass(m_Device->GetVkDevice(), &rp_info, nullptr, &m_RenderPass));
+		}
 	}
 
 	void VulkanSwapChain::CreateSyncObjects()
@@ -247,6 +298,7 @@ namespace PAL
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			createInfo.image = m_SwapChainImages[i];
 
+
 			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			createInfo.format = m_SwapChainImageFormat;
 
@@ -310,6 +362,8 @@ namespace PAL
 			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
 			vkDestroyFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_InFlightFence[i], nullptr);
 		}
+
+		vkDestroyRenderPass(m_Device->GetVkDevice(), m_RenderPass, nullptr);
 	}
 
 	void VulkanSwapChain::RecreateSwapChain(const SharedPtr<RenderPass>& renderPass)
@@ -339,7 +393,9 @@ namespace PAL
 	void VulkanSwapChain::PresentFrame(const SharedPtr<RenderPass>& renderpass, const SharedPtr<CommandBuffer>& commandBuffer)
 	{
 		auto& commandBuffers = commandBuffer->GetCommandBuffers();
-		uint32_t& currentFrame = VulkanAPI::s_CurrentFrame;
+		uint32_t& currentFrame = VulkanAPI::s_CurrentFrame; // by ref because we want to increment the value
+
+		//VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffers[currentFrame]));
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -388,6 +444,99 @@ namespace PAL
 		}
 
 		currentFrame = (currentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
+	}
+
+	VkCommandBuffer VulkanSwapChain::BeginSingleTimeCommands(VkCommandPool commandPool)
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = commandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		return commandBuffer;
+	}
+
+	void VulkanSwapChain::EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer)
+	{
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue());
+
+		vkFreeCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), commandPool, 1, &commandBuffer);
+	}
+
+	void VulkanSwapChain::TransitionImageLayout(VkCommandPool commandPool, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	{
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands(commandPool);
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = m_SwapChainImages[m_ImageIndex];
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		VkPipelineStageFlags sourceStage;
+		VkPipelineStageFlags destinationStage;
+
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else
+		{
+			throw std::invalid_argument("unsupported layout transition!");
+		}
+
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			sourceStage, destinationStage,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier
+		);
+
+		EndSingleTimeCommands(commandPool, commandBuffer);
 	}
 
 	

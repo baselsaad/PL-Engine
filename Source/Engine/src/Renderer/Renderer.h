@@ -33,17 +33,23 @@ namespace PAL
 		void Init(RenderAPITarget target);
 		void Shutdown();
 
-		void StartFrame(const Camera& camera);
+		void StartFrame();
 		void EndFrame();
+		void FlushDrawCommands();
 
 		void DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color = glm::vec3(0.5f, 1.0f, 0.0f));// just for test
 		void DrawQuad(const TransformComponent& transform, const glm::vec3& color);// just for test
+
+		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 
 		void RecordCommand(const std::function<void()>& command);
 		void WaitForIdle();
 		void ResizeFrameBuffer(bool resize = false, int width = 0, int height = 0);
 
+		void PresentFrame();
+
 		static RenderStats& GetStats() { return s_RenderStats; }
+		inline SharedPtr<IRenderAPI>& GetRenderAPI() { return m_RenderAPI; }
 	
 	private:
 		void Flush();

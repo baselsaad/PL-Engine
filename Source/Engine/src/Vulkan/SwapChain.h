@@ -7,6 +7,7 @@ namespace PAL
 {
 	class Window;
 	class RenderPass;
+	class VulkanFramebuffer;
 
 	struct SwapChainSupportDetails
 	{
@@ -31,6 +32,10 @@ namespace PAL
 		void RecreateSwapChain(const SharedPtr<RenderPass>& renderPass);
 		void PresentFrame(const SharedPtr<RenderPass>& renderpass, const SharedPtr<CommandBuffer>& commandBuffer);
 		
+		VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
+		void EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer);
+		void TransitionImageLayout(VkCommandPool commandPool, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -40,12 +45,14 @@ namespace PAL
 		static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 		inline const VkSwapchainKHR GetVkSwapChain() const { return m_SwapChain; }
+		inline const std::vector<VkImage>& GetSwapChainImages() const { return m_SwapChainImages; }
 		inline const std::vector<VkImageView>& GetSwapChainImageViews() const { return m_SwapChainImageViews; }
 		inline const std::vector<VkFramebuffer>& GetSwapChainFramebuffers() const { return m_SwapChainFramebuffers; }
 		inline const VkExtent2D& GetSwapChainExtent() const { return m_SwapChainExtent; }
 		inline const VkFormat GetSwapChainImageFormat() const { return m_SwapChainImageFormat; }
 		inline const std::vector<VkFence>& GetInFlightFence() { return m_InFlightFence; }
 		inline const uint32_t& GetImageIndex() { return m_ImageIndex; }
+		inline VkRenderPass GetRenderPass() { return m_RenderPass; }
 	private:
 		SharedPtr<VulkanDevice> m_Device;
 
@@ -56,10 +63,15 @@ namespace PAL
 		std::vector<VkImageView> m_SwapChainImageViews;
 		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
+		VkRenderPass m_RenderPass;
+
 		// Semaphores
 		std::vector<VkSemaphore> m_ImageAvailableSemaphore;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphore;
 		std::vector<VkFence> m_InFlightFence;
+
+		VkImageView m_FramebufferTexture;
+		VkImage m_ColorAttachmentImage;
 
 		uint32_t m_ImageIndex;
 

@@ -64,10 +64,29 @@ namespace PAL
 		vmaDestroyBuffer(s_Allocator, buffer, allocation);
 	}
 
+	void VulkanMemoryAllocator::DestroyImage(VkImage image, VmaAllocation allocation)
+	{
+		vmaDestroyImage(s_Allocator, image, allocation);
+	}
 
 	void VulkanMemoryAllocator::UnmapMemory(VmaAllocation allocation)
 	{
 		vmaUnmapMemory(s_Allocator, allocation);
+	}
+
+	VmaAllocation VulkanMemoryAllocator::AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage)
+	{
+		VmaAllocationCreateInfo allocCreateInfo = {};
+		allocCreateInfo.usage = usage;
+
+		VmaAllocation allocation;
+		vmaCreateImage(s_Allocator, &imageCreateInfo, &allocCreateInfo, &outImage, &allocation, nullptr);
+
+		// TODO: Tracking
+		VmaAllocationInfo allocInfo;
+		vmaGetAllocationInfo(s_Allocator, allocation, &allocInfo);
+
+		return allocation;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

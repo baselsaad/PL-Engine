@@ -21,12 +21,18 @@
 #include "Math/Math.h"
 #include "Map/World.h"
 #include "Event/Event.h"
+#include "Platform/PlatformEntry.h"
+
+// Testing
+#include "Vulkan/CommandBuffer.h"
+#include "Utilities/Debug.h"
+#include "../../Editor/src/Editor.h"
 
 namespace PAL
 {
 	Engine* Engine::s_Instance;
 
-	Engine::Engine(/*specs*/)
+	Engine::Engine(const EngineArgs& engineArgs)
 		: m_ShouldCloseWindow(false)
 		, m_EngineState(EngineStates::UpdateAndRender)
 	{
@@ -34,15 +40,14 @@ namespace PAL
 
 		s_Instance = this;
 
-		WindowData data{};
-		data.Width = 800;
-		data.Height = 600;
-		data.Title = "PL Engine";
-		data.Vsync = false;
-		data.Mode = WindowMode::Windowed;
-
-		m_Window = NewUnique<WindowsWindow>(data);
+		m_Window = NewUnique<WindowsWindow>(engineArgs.EngineWindowData);
 		m_Window->SetupEventCallback(BIND_FUN(this, Engine::OnEvent));
+
+		m_Renderer = NewShared<Renderer>();
+		m_Renderer->Init(RenderAPITarget::Vulkan);
+
+		// init editor
+		Editor::GetInstance();
 	}
 
 	void Engine::Run()
@@ -55,9 +60,6 @@ namespace PAL
 		m_EventHandler.BindAction(EventType::KeyPressed, this, &Engine::OnKeyPressed);
 		m_EventHandler.BindAction(EventType::FrameBufferResize, this, &Engine::OnResizeFrameBuffer);
 
-		m_Renderer = NewShared<Renderer>();
-		m_Renderer->Init(RenderAPITarget::Vulkan);
-
 		m_World = NewShared<World>(); // default map for now 
 		m_World->BeginPlay(); //TODO: move later, should be called from editor when press play 
 
@@ -69,6 +71,8 @@ namespace PAL
 		CORE_PROFILER_FUNC();
 
 		m_Renderer->WaitForIdle();
+		Editor::GetInstance().Shutdown();
+
 		m_Renderer->Shutdown();
 		m_Window->Close();
 	}
@@ -82,24 +86,39 @@ namespace PAL
 			m_DeltaTime.Update();
 			m_Window->PollEvents();
 
+			// Start recording main command buffer
+			m_Renderer->StartFrame();
+
 			switch (m_EngineState)
 			{
-				case PAL::EngineStates::Render:
+				case EngineStates::Render:
 				{
 					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
 					break;
 				}
-				case PAL::EngineStates::UpdateAndRender:
+				case EngineStates::UpdateAndRender:
 				{
 					m_World->OnUpdate(m_DeltaTime.GetSeconds());
 					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
 					break;
 				}
-				case PAL::EngineStates::Idle:
+				case EngineStates::Idle:
 				{
 					break;
 				}
 			}
+
+			// Render the world
+			m_Renderer->FlushDrawCommands();
+
+			// Render ImGui on top of everything
+			Editor::GetInstance().OnRenderImGui();
+
+			// End recording main command buffer
+			m_Renderer->EndFrame();
+
+			// Submit main command buffer and present image to swapchain
+			m_Renderer->PresentFrame();
 		}
 	}
 
@@ -137,4 +156,5 @@ namespace PAL
 				m_Window->SetScreenMode(WindowMode::FullScreen);
 		}
 	}
+	
 }

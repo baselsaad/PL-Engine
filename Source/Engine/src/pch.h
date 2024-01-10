@@ -15,6 +15,10 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
+
+#include <stdio.h>          // printf, fprintf
+#include <stdlib.h>         // abort
 
 #include <chrono>
 #include <random>
