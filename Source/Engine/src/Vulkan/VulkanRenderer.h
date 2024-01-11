@@ -10,6 +10,7 @@ namespace PAL
 	class RenderPass;
 	class VulkanVertexBuffer;
 	class VulkanIndexBuffer;
+	class VulkanFramebuffer;
 
 	class VulkanAPI : public IRenderAPI
 	{
@@ -34,9 +35,13 @@ namespace PAL
 		inline const SharedPtr<RenderPass>& GetRenderPass() { return m_RenderPass; }
 		inline const SharedPtr<PipeLine> GetGraphicsPipline() { return m_Pipline; }
 
+		// Remove Later
+		inline const SharedPtr<VulkanFramebuffer>& GetSceneFrameBuffer() { return m_SceneFrameBuffer; }
+
 	private:
 		SharedPtr<RenderPass> m_RenderPass;
 		SharedPtr<PipeLine> m_Pipline;
+		SharedPtr<VulkanFramebuffer> m_SceneFrameBuffer;
 		std::vector <std::function<void()>> m_Commands;
 
 		SharedPtr<VulkanDevice> m_Device;

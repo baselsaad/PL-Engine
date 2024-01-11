@@ -1,7 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 a_Position;
-layout(location = 1) in vec3 a_Color;
+layout(location = 1) in vec4 a_Color;
 //layout(location = 2) in vec3 a_Translation; // Translation vector
 //layout(location = 3) in vec3 a_Scale;       // Scale vector
 
@@ -9,7 +9,7 @@ layout(push_constant) uniform PushConstants {
     mat4 u_MVP;
 } pc;
 
-layout(location = 0) out vec3 v_FragColor;
+layout(location = 0) out vec4 v_FragColor;
 
 mat4 CreateTranslationMatrix(vec3 translation) {
     return mat4(

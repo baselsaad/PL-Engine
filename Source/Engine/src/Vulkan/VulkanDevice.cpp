@@ -188,6 +188,8 @@ namespace PAL
 	void VulkanDevice::Shutdown()
 	{
 		m_CommandBuffer->Shutdown();
+
+		vkDestroyDevice(m_Device, nullptr);
 	}
 
 	void VulkanDevice::CreateMainCommandBuffer()

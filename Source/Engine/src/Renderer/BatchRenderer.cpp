@@ -110,7 +110,7 @@ namespace PAL
 		}
 	}
 
-	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec3& color)
+	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -125,7 +125,7 @@ namespace PAL
 		m_QuadBatchingData.IndexCount += 6;
 	}
 
-	void BatchRenderer::AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)//calculate TransformationMatrix in GPU 
+	void BatchRenderer::AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)//calculate TransformationMatrix in GPU 
 	{
 		CORE_PROFILER_FUNC();
 

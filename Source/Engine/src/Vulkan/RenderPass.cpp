@@ -4,48 +4,58 @@
 #include "Core/Window.h"
 #include "Vulkan/SwapChain.h"
 #include "VulkanContext.h"
+#include "VulkanFramebuffer.h"
 
 namespace PAL
 {
 
-	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice)
+	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, bool isSwapchainTarget)
+		: m_IsSwapchainTarget(isSwapchainTarget)
 	{
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		VkClearValue clearValues[1];
+		clearValues[0].color = { {0.2f, 0.1f,0.0f, 1.0f} };
 
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentDescription attachmentDescription = {};
+		attachmentDescription.flags = 0;
+		attachmentDescription.format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
+		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; //VK_ATTACHMENT_LOAD_OP_CLEAR or do not clear on load use => VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VkSubpassDescription subpass{};
+		if (isSwapchainTarget)
+			attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		else
+			attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkAttachmentReference color_attachment = {};
+		color_attachment.attachment = 0;
+		color_attachment.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pColorAttachments = &color_attachment;
 
-		VkSubpassDependency dependency{};
+		VkSubpassDependency dependency = {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		VkRenderPassCreateInfo renderPassInfo{};
+		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.pAttachments = &attachmentDescription;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
+
 		VK_CHECK_RESULT(vkCreateRenderPass(vulkanDevice->GetVkDevice(), &renderPassInfo, nullptr, &m_RenderPass));
 	}
 
@@ -60,13 +70,26 @@ namespace PAL
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = GetVkRenderPass();
-		renderPassInfo.framebuffer = swapchain->GetSwapChainFramebuffers()[imageIndex];
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.framebuffer = m_Framebuffer->GetFramebuffer(imageIndex);
+
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapchain->GetSwapChainExtent();
-		VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+
+		if (!m_IsSwapchainTarget)
+		{
+			VkExtent2D extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };
+			renderPassInfo.renderArea.extent = extent;
+		}
+		else
+		{
+			renderPassInfo.renderArea.extent = swapchain->GetSwapChainExtent();
+		}
+
+		VkClearValue clearValues[1];
+		clearValues[0].color = { {0.0f, 0.0f,0.0f, 1.0f} };
+
 		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
+		renderPassInfo.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(currentCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}

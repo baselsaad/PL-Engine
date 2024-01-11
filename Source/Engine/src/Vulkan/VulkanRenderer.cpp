@@ -17,6 +17,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "Utilities/Timer.h"
 #include "../../Editor/src/Editor.h"
+#include "VulkanFramebuffer.h"
 
 namespace PAL
 {
@@ -29,8 +30,26 @@ namespace PAL
 		VulkanContext::CreateVulkanSwapChain();
 		m_Device = VulkanContext::GetVulkanDevice();
 
-		m_RenderPass = NewShared<RenderPass>(VulkanContext::GetVulkanDevice());
-		VulkanContext::GetSwapChain()->CreateFramebuffers(m_RenderPass->GetVkRenderPass());
+		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
+
+		bool isSwapChainTarget = false;
+		m_RenderPass = NewShared<RenderPass>(VulkanContext::GetVulkanDevice(), isSwapChainTarget);
+
+		// @TODO: Move To SceneRenderer/Runtime Renderer
+		FramebufferSpecification sceneSpec = {};
+		sceneSpec.BufferCount = VulkanContext::GetSwapChain()->GetSwapChainImages().size();
+		sceneSpec.ColorFormat = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
+		sceneSpec.DepthFormat = VK_FORMAT_UNDEFINED;
+		sceneSpec.Width = 800;
+		sceneSpec.Height = 600;
+		sceneSpec.UseDepth = false;
+		sceneSpec.IsSwapchainTarget = isSwapChainTarget;
+		sceneSpec.DebugName = "Scene Framebuffer";
+
+		m_SceneFrameBuffer = NewShared<VulkanFramebuffer>(VulkanContext::GetVulkanDevice()->GetVkDevice(),
+			m_Device->GetPhysicalDevice()->GetVkPhysicalDevice(), m_RenderPass->GetVkRenderPass(), sceneSpec);
+
+		m_RenderPass->SetFrameBuffer(m_SceneFrameBuffer);
 
 		m_Pipline = NewShared<PipeLine>(m_RenderPass);
 	}
@@ -39,6 +58,7 @@ namespace PAL
 	{
 		m_Pipline->Shutdown();
 		m_RenderPass->Shutdown();
+		m_SceneFrameBuffer->Shutdown();
 
 		VulkanMemoryAllocator::Shutdown();
 		VulkanContext::Shutdown();
@@ -52,6 +72,12 @@ namespace PAL
 	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, int width /*= 0*/, int height /*= 0*/)
 	{
 		s_ResizeFrameBuffer = resize;
+
+		if (width != 0 && height != 0 && width != m_SceneFrameBuffer->GetSpecification().Width
+			&& height != m_SceneFrameBuffer->GetSpecification().Height)
+		{
+			m_SceneFrameBuffer->Resize(width, height);
+		}
 	}
 
 	void VulkanAPI::RecordCommand(const std::function<void()>& command)
@@ -61,8 +87,7 @@ namespace PAL
 
 	void VulkanAPI::PresentFrame()
 	{
-		//VulkanContext::GetSwapChain()->TransitionImageLayout(m_CommandBuffer->GetCommandPool(), VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-		VulkanContext::GetSwapChain()->PresentFrame(m_RenderPass, m_Device->GetMainCommandBuffer());
+		VulkanContext::GetSwapChain()->PresentFrame(m_SceneFrameBuffer, m_Device->GetMainCommandBuffer());
 	}
 
 	void VulkanAPI::BeginFrame()
@@ -72,7 +97,6 @@ namespace PAL
 		// TODO: Move later
 		{
 			VulkanContext::GetSwapChain()->AcquireNextImage(m_RenderPass);
-			//VulkanContext::GetSwapChain()->TransitionImageLayout(m_CommandBuffer->GetCommandPool(), VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			vkResetCommandBuffer(m_Device->GetCurrentCommandBuffer(), /*VkCommandBufferResetFlagBits*/ 0);
 		}
 
@@ -80,6 +104,13 @@ namespace PAL
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(m_Device->GetCurrentCommandBuffer(), &beginInfo));
+
+		// @TODO: Move to SceneRenderer
+		if (!m_SceneFrameBuffer->GetSpecification().IsSwapchainTarget && m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		{
+			VulkanContext::GetSwapChain()->TransitionImageLayout(m_SceneFrameBuffer->GetFrameBufferImage()->ColorImage, m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // ready for rendering
+		}
 	}
 
 	void VulkanAPI::EndFrame()

@@ -37,8 +37,8 @@ namespace PAL
 		void EndFrame();
 		void FlushDrawCommands();
 
-		void DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color = glm::vec3(0.5f, 1.0f, 0.0f));// just for test
-		void DrawQuad(const TransformComponent& transform, const glm::vec3& color);// just for test
+		void DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color = glm::vec4(0.5f, 1.0f, 0.0f,1.0f));// just for test
+		void DrawQuad(const TransformComponent& transform, const glm::vec4& color);// just for test
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 

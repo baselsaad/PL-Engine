@@ -18,6 +18,7 @@ namespace PAL
 	//template<typename T>
 	//using SharedPtr = std::shared_ptr<T>;
 
+	
 	template<class T>
 	class SharedPtr
 	{
@@ -112,6 +113,7 @@ namespace PAL
 			return StdSharedPtr != nullptr;
 		}
 	};
+	
 
 	template<typename T, typename ... Args>
 	std::shared_ptr<T> NewShared(Args&& ... args)
@@ -119,5 +121,10 @@ namespace PAL
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
-	
+	template<typename T2, typename T1>
+	SharedPtr<T2> As(T1& obj)
+	{
+		return SharedPtr<T2>(std::static_pointer_cast<T2>(obj));
+	}
+
 }

@@ -28,7 +28,6 @@ namespace PAL
 		}
 
 		m_RenderAPI->Init();
-		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
 
 		m_BatchRenderer = new BatchRenderer(VulkanContext::GetVulkanDevice()->GetMainCommandBuffer());
 	}
@@ -89,7 +88,7 @@ namespace PAL
 		m_RenderAPI->FlushDrawCommands();
 	}
 
-	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color)
+	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -110,7 +109,7 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void Renderer::DrawQuad(const TransformComponent& transform, const glm::vec3& color)
+	void Renderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -141,7 +140,7 @@ namespace PAL
 
 	void Renderer::ResizeFrameBuffer(bool resize, int width, int height)
 	{
-		m_RenderAPI->ResizeFrameBuffer(resize);
+		m_RenderAPI->ResizeFrameBuffer(resize, width, height);
 	}
 
 	void Renderer::PresentFrame()

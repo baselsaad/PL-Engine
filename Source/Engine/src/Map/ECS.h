@@ -34,16 +34,16 @@ namespace PAL
 	struct RenderComponent
 	{
 		// Texture id
-		glm::vec3 Color = { 1.0f, 1.0f, 1.0f };
+		glm::vec4 Color = { 1.0f, 1.0f, 1.0f ,1.0f };
 
 		RenderComponent() = default;
 		RenderComponent(const RenderComponent&) = default;
-		RenderComponent(const glm::vec3& color)
+		RenderComponent(const glm::vec4& color)
 			: Color(color)
 		{
 		}
 
-		glm::vec3& GetColor() { return Color; }
+		glm::vec4& GetColor() { return Color; }
 	};
 
 }

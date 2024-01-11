@@ -55,6 +55,11 @@ namespace PAL
 			return { R,G,B };
 		}
 
+		operator const glm::vec4() const
+		{
+			return { R,G,B,Alpha };
+		}
+
 		glm::vec3 GetVec3() const 
 		{
 			return { R,G,B };

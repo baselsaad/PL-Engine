@@ -18,6 +18,12 @@
 			DEBUG_BREAK();		\
 		}
 
+#define ASSERT(x)				\
+		if (!(x))				\
+		{						\
+			DEBUG_BREAK();		\
+		}
+
 #define VK_CHECK_RESULT(f)													\
 {																			\
 	VkResult res = (f);														\

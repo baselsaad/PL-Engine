@@ -82,7 +82,6 @@ namespace PAL
 		VmaAllocation allocation;
 		vmaCreateImage(s_Allocator, &imageCreateInfo, &allocCreateInfo, &outImage, &allocation, nullptr);
 
-		// TODO: Tracking
 		VmaAllocationInfo allocInfo;
 		vmaGetAllocationInfo(s_Allocator, allocation, &allocInfo);
 

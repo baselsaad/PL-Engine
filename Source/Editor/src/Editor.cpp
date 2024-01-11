@@ -22,13 +22,13 @@
 #include "Vulkan/VulkanRenderer.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderAPI.h"
+#include "Vulkan/VulkanFramebuffer.h"
 
 namespace PAL
 {
 	static std::vector<VkCommandBuffer> s_ImGuiCommandBuffers;
+	static SharedPtr<VulkanFramebuffer> s_ImGuiFramebuffer;
 	static VkDescriptorPool s_DescriptorPool = VK_NULL_HANDLE;
-	static VkSampler s_TextureSampler;
-	static std::vector<VkDescriptorSet> s_Dset;
 
 	int ApplicationMain(int argc, char** args)
 	{
@@ -41,7 +41,7 @@ namespace PAL
 		window.Width = 800.0f;
 		window.Height = 600.0f;
 		window.Title = "PAL Editor";
-		window.Vsync = true;
+		window.Vsync = false;
 		window.Mode = WindowMode::Windowed;
 
 		engineArgs.EngineWindowData = window;
@@ -68,12 +68,21 @@ namespace PAL
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
-		// Create Descriptor Pool
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, style.Colors[ImGuiCol_WindowBg].w);
+
 		VkDescriptorPoolSize pool_sizes[] =
 		{
 			{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
@@ -105,6 +114,22 @@ namespace PAL
 			//endSingleTimeCommands(command_buffer);
 		}
 
+		CreateRenderPass();
+
+		FramebufferSpecification imguiSpec = {};
+		imguiSpec.BufferCount = swapchain->GetSwapChainImages().size();
+		imguiSpec.ColorFormat = swapchain->GetSwapChainImageFormat();
+		imguiSpec.DepthFormat = VK_FORMAT_UNDEFINED;
+		imguiSpec.Width = 800;
+		imguiSpec.Height = 600;
+		imguiSpec.UseDepth = false;
+		imguiSpec.IsSwapchainTarget = true;
+		imguiSpec.DebugName = "imgui Framebuffer";
+
+		s_ImGuiFramebuffer = NewShared<VulkanFramebuffer>(VulkanContext::GetVulkanDevice()->GetVkDevice(),
+			VulkanContext::GetVulkanDevice()->GetPhysicalDevice()->GetVkPhysicalDevice()
+			, m_ImGuiRenderPass, imguiSpec);
+
 		// Setup Platform/Renderer backends
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = VulkanContext::GetVulkanInstance();
@@ -121,7 +146,7 @@ namespace PAL
 		init_info.Allocator = nullptr;
 		init_info.CheckVkResultFn = nullptr;
 
-		ImGui_ImplVulkan_Init(&init_info, swapchain->GetRenderPass());
+		ImGui_ImplVulkan_Init(&init_info, m_ImGuiRenderPass);
 
 		constexpr int framesInFlight = VulkanAPI::GetMaxFramesInFlight();
 		s_ImGuiCommandBuffers.resize(framesInFlight);
@@ -129,29 +154,6 @@ namespace PAL
 		{
 			s_ImGuiCommandBuffers[i] = VulkanContext::GetVulkanDevice()->GetMainCommandBuffer()->CreateSecondaryCommandBuffer();
 		}
-
-		//VkSamplerCreateInfo samplerInfo{};
-		//samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		//samplerInfo.magFilter = VK_FILTER_LINEAR;
-		//samplerInfo.minFilter = VK_FILTER_LINEAR;
-		//samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		//samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		//samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		//samplerInfo.anisotropyEnable = VK_FALSE;
-		//samplerInfo.maxAnisotropy = 1.0f;
-		//samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		//samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		//samplerInfo.compareEnable = VK_FALSE;
-		//samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		//samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		//samplerInfo.mipLodBias = 0.0f;
-		//samplerInfo.minLod = 0.0f;
-		//samplerInfo.maxLod = 0.0f;
-		//VK_CHECK_RESULT(vkCreateSampler(VulkanContext::GetVulkanDevice()->GetVkDevice(), &samplerInfo, nullptr, &s_TextureSampler));
-
-		//s_Dset.resize(swapchain->GetSwapChainImageViews().size());
-		//for (uint32_t i = 0; i < swapchain->GetSwapChainImageViews().size(); i++)
-		//	s_Dset[i] = ImGui_ImplVulkan_AddTexture(s_TextureSampler, swapchain->GetSwapChainImageViews().at(i), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	Editor::~Editor()
@@ -172,21 +174,97 @@ namespace PAL
 		ImGui::DestroyContext();
 
 		vkDestroyDescriptorPool(VulkanContext::GetVulkanDevice()->GetVkDevice(), s_DescriptorPool, nullptr);
+		vkDestroyRenderPass(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImGuiRenderPass, nullptr);
+		s_ImGuiFramebuffer->Shutdown();
 	}
 
-	void Editor::OnRenderImGui()
+	void Editor::CreateRenderPass()
+	{
+		VkAttachmentDescription attachments[1];
+		attachments[0].format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+
+		// if DONOT_CARE the ui will be rendered on top of the prev one (the prev one is responsible for clearing)
+		// @TODO: Create a render pass just for clearing 
+
+		if (Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetSpecification().IsSwapchainTarget)
+			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		else
+			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].flags = 0;
+
+		VkAttachmentReference color_reference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.flags = 0;
+		subpass.inputAttachmentCount = 0;
+		subpass.pInputAttachments = NULL;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_reference;
+		subpass.pResolveAttachments = NULL;
+		subpass.pDepthStencilAttachment = NULL;
+		subpass.preserveAttachmentCount = 0;
+		subpass.pPreserveAttachments = NULL;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkRenderPassCreateInfo rp_info = {};
+		rp_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		rp_info.pNext = NULL;
+		rp_info.attachmentCount = 1;
+		rp_info.pAttachments = attachments;
+		rp_info.subpassCount = 1;
+		rp_info.pSubpasses = &subpass;
+		rp_info.dependencyCount = 1;
+		rp_info.pDependencies = &dependency;
+
+		VK_CHECK_RESULT(vkCreateRenderPass(VulkanContext::GetVulkanDevice()->GetVkDevice(), &rp_info, nullptr, &m_ImGuiRenderPass));
+	}
+
+	VkDescriptorSet s_TextureID; 
+	void Editor::OnRenderImGui(VulkanImage* image)
 	{
 		BeginFrame();
 		{
-			static bool show_demo_window = true;
-			ImGui::ShowDemoWindow(&show_demo_window);
+			//static bool show_demo_window = true;
+			//ImGui::ShowDemoWindow(&show_demo_window);
 
 			ImGui::Begin("Viewport");
 
-			auto& swapChain = VulkanContext::GetSwapChain();
+			m_ViewportSize = ImGui::GetContentRegionAvail();
+			auto& sceneFramebuffer = Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer();
+			auto& framebufferSpec = sceneFramebuffer->GetSpecification();
 
-			//ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-			//ImGui::Image(s_Dset[VulkanAPI::GetCurrentFrame()], ImVec2{ viewportPanelSize.x, viewportPanelSize.y });
+			if (!framebufferSpec.IsSwapchainTarget)
+			{
+				if (image->ImageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+				{
+					VulkanContext::GetSwapChain()->TransitionImageLayout(image->ColorImage, image->ImageLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+					image->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				}
+
+				if (s_TextureID != VK_NULL_HANDLE)
+				{
+					ImGui_ImplVulkan_RemoveTexture(s_TextureID);
+					s_TextureID = VK_NULL_HANDLE;
+				}
+
+				s_TextureID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				ImGui::Image(s_TextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
+			}
 
 			ImGui::End();
 		}
@@ -208,9 +286,8 @@ namespace PAL
 		// Rendering
 		ImGui::Render();
 
-		VkClearValue clearValues[2];
-		clearValues[0].color = { {0.1f, 0.1f,0.1f, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		VkClearValue clearValues[1];
+		clearValues[0].color = { {0.0f, 0.0f,0.0f, 1.0f} };
 
 		uint32_t width = swapChain->GetSwapChainExtent().width;
 		uint32_t height = swapChain->GetSwapChainExtent().height;
@@ -222,21 +299,21 @@ namespace PAL
 		VkRenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.pNext = nullptr;
-		renderPassBeginInfo.renderPass = swapChain->GetRenderPass();
+		renderPassBeginInfo.renderPass = m_ImGuiRenderPass;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = width;
 		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = 2; // Color + depth
+		renderPassBeginInfo.clearValueCount = 1;
 		renderPassBeginInfo.pClearValues = clearValues;
-		renderPassBeginInfo.framebuffer = swapChain->GetSwapChainFramebuffers().at(swapChain->GetImageIndex());
+		renderPassBeginInfo.framebuffer = s_ImGuiFramebuffer->GetFramebuffer(swapChain->GetImageIndex());
 
 		vkCmdBeginRenderPass(mainCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		VkCommandBufferInheritanceInfo inheritanceInfo = {};
 		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = swapChain->GetRenderPass();
-		inheritanceInfo.framebuffer = swapChain->GetSwapChainFramebuffers().at(swapChain->GetImageIndex());
+		inheritanceInfo.renderPass = m_ImGuiRenderPass;
+		inheritanceInfo.framebuffer = s_ImGuiFramebuffer->GetFramebuffer(swapChain->GetImageIndex());
 
 		VkCommandBufferBeginInfo cmdBufInfo = {};
 		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

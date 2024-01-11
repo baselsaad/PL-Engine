@@ -53,7 +53,7 @@ namespace PAL
 		entityTest.SetColor(Colors::Orange);
 
 		Entity entityTest2(this);
-		entityTest2.SetColor(Colors::Blue);
+		entityTest2.SetColor({ 0.00f, 0.44f, 0.87f ,0.5f});
 		entityTest2.GetTransform().Translation.x = 2.0f;
 
 		if (m_ActiveCamera == nullptr)

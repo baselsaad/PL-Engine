@@ -29,9 +29,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 		Debug::LogError("validation layer: {0}\n", pCallbackData->pMessage);
+		//ASSERT(false);
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
 		Debug::Critical("validation layer: {0}\n", pCallbackData->pMessage);
+		ASSERT(false);
 		break;
 		default:
 		break;
@@ -129,14 +131,16 @@ namespace PAL
 
 	void VulkanContext::Shutdown()
 	{
-#if DEBUG
-		DestroyDebugUtilsMessengerEXT(s_VulkanInstance, s_DebugMessenger, nullptr);
-#endif
+
+		s_SwapChain->CleanupSwapChain();
+		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
 
 		s_VulkanDevice->Shutdown();
-		s_SwapChain->CleanupSwapChain();
-		vkDestroyDevice(s_VulkanDevice->GetVkDevice(), nullptr);
-		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
+
+	#if DEBUG
+		DestroyDebugUtilsMessengerEXT(s_VulkanInstance, s_DebugMessenger, nullptr);
+	#endif
+
 		vkDestroyInstance(s_VulkanInstance, nullptr);
 	}
 

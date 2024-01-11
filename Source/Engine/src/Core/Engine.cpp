@@ -27,6 +27,7 @@
 #include "Vulkan/CommandBuffer.h"
 #include "Utilities/Debug.h"
 #include "../../Editor/src/Editor.h"
+#include "Vulkan/VulkanFramebuffer.h"
 
 namespace PAL
 {
@@ -85,6 +86,12 @@ namespace PAL
 
 			m_DeltaTime.Update();
 			m_Window->PollEvents();
+			
+			auto viewPortSize = Editor::GetInstance().GetViewportSize();
+
+			{
+				m_Renderer->ResizeFrameBuffer(false, (int) viewPortSize.x, (int) viewPortSize.y);
+			}
 
 			// Start recording main command buffer
 			m_Renderer->StartFrame();
@@ -95,7 +102,7 @@ namespace PAL
 				{
 					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
 					break;
-				}
+				} 
 				case EngineStates::UpdateAndRender:
 				{
 					m_World->OnUpdate(m_DeltaTime.GetSeconds());
@@ -112,8 +119,8 @@ namespace PAL
 			m_Renderer->FlushDrawCommands();
 
 			// Render ImGui on top of everything
-			Editor::GetInstance().OnRenderImGui();
-
+			Editor::GetInstance().OnRenderImGui(m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetFrameBufferImage());
+		
 			// End recording main command buffer
 			m_Renderer->EndFrame();
 

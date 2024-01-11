@@ -9,7 +9,7 @@ namespace PAL
 	{
 
 		glm::vec3 Pos;
-		glm::vec3 Color; // @TODO: Vec4
+		glm::vec4 Color; 
 		//glm::vec3 Translation;
 		//glm::vec3 Scale;
 
@@ -34,7 +34,7 @@ namespace PAL
 
 			attributeDescriptions[1].binding = 0;
 			attributeDescriptions[1].location = 1;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
 
 			//attributeDescriptions[2].binding = 0;

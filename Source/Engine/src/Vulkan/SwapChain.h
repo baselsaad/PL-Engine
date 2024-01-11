@@ -19,6 +19,8 @@ namespace PAL
 	class VulkanSwapChain
 	{
 	public:
+		using CallbackType = std::function<void(uint32_t newWidth, uint32_t newHeight)>;
+
 		VulkanSwapChain() = default;
 		~VulkanSwapChain();
 		VulkanSwapChain(const SharedPtr<VulkanDevice>& device);
@@ -27,14 +29,13 @@ namespace PAL
 		void CreateSyncObjects();
 
 		void CreateImageViews();
-		void CreateFramebuffers(VkRenderPass renderPass);
 		void CleanupSwapChain();
-		void RecreateSwapChain(const SharedPtr<RenderPass>& renderPass);
-		void PresentFrame(const SharedPtr<RenderPass>& renderpass, const SharedPtr<CommandBuffer>& commandBuffer);
+		void RecreateSwapChain();
+		void PresentFrame(const SharedPtr<VulkanFramebuffer>& sceneFrameBuffer, const SharedPtr<CommandBuffer>& commandBuffer);
 		
 		VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
 		void EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer);
-		void TransitionImageLayout(VkCommandPool commandPool, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
@@ -47,12 +48,19 @@ namespace PAL
 		inline const VkSwapchainKHR GetVkSwapChain() const { return m_SwapChain; }
 		inline const std::vector<VkImage>& GetSwapChainImages() const { return m_SwapChainImages; }
 		inline const std::vector<VkImageView>& GetSwapChainImageViews() const { return m_SwapChainImageViews; }
-		inline const std::vector<VkFramebuffer>& GetSwapChainFramebuffers() const { return m_SwapChainFramebuffers; }
 		inline const VkExtent2D& GetSwapChainExtent() const { return m_SwapChainExtent; }
 		inline const VkFormat GetSwapChainImageFormat() const { return m_SwapChainImageFormat; }
 		inline const std::vector<VkFence>& GetInFlightFence() { return m_InFlightFence; }
 		inline const uint32_t& GetImageIndex() { return m_ImageIndex; }
-		inline VkRenderPass GetRenderPass() { return m_RenderPass; }
+
+		inline void BindResizeCallback(CallbackType&& callback) { m_ResizeCallbacks.emplace_back(callback); }
+
+		// @TODO : Fix this
+		//inline void UnBindResizeCallback(const CallbackType& callback)
+		//{
+		//	m_ResizeCallbacks.erase(std::remove(m_ResizeCallbacks.begin(), m_ResizeCallbacks.end(), callback), m_ResizeCallbacks.end());
+		//}
+
 	private:
 		SharedPtr<VulkanDevice> m_Device;
 
@@ -60,20 +68,18 @@ namespace PAL
 		std::vector<VkImage> m_SwapChainImages;
 		VkFormat m_SwapChainImageFormat;
 		VkExtent2D m_SwapChainExtent;
-		std::vector<VkImageView> m_SwapChainImageViews;
-		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
-		VkRenderPass m_RenderPass;
+		std::vector<VkImageView> m_SwapChainImageViews;
 
 		// Semaphores
 		std::vector<VkSemaphore> m_ImageAvailableSemaphore;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphore;
 		std::vector<VkFence> m_InFlightFence;
 
-		VkImageView m_FramebufferTexture;
-		VkImage m_ColorAttachmentImage;
-
 		uint32_t m_ImageIndex;
+
+		std::vector<CallbackType> m_ResizeCallbacks;
+
 
 	};
 }

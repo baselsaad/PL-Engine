@@ -25,10 +25,10 @@ namespace PAL
 
 		void Begin();
 		void End();
-		void AddQuadToBatch(const glm::mat4& transform, const glm::vec3& color);
+		void AddQuadToBatch(const glm::mat4& transform, const glm::vec4& color);
 		
 		//calculate TransformationMatrix in GPU 
-		void AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec3& color);
+		void AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color);
 
 		void BindCurrentQuadBatch();
 		void FindOrCreateNewQuadBatch();

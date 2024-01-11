@@ -57,6 +57,7 @@ namespace PAL
 	void WindowsWindow::SetVsync(bool enable)
 	{
 		m_WindowData.Vsync = enable;
+		glfwSwapInterval(enable ? 1 : 0);
 	}
 
 	void WindowsWindow::OnResize(int width, int height)
