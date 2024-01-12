@@ -23,10 +23,13 @@ namespace PAL
 		virtual void OnUpdate(float deltaTime) {}
 		virtual void SetupInput(EventHandler& e) {}
 		virtual CameraType GetCameraType() const { return CameraType::Unknown; }
+		virtual void SetAspectRatio(float aspectRatio) {}
+		virtual float GetAspectRatio() { return 0.0f; }
 
 		inline const glm::mat4& GetModelMatrix() const { return m_ModelTransformation; }
 		inline const glm::mat4& GetViewMatrix() const { return m_ViewTransformation; }
 		inline const glm::mat4& GetModellViewProjection() const { return m_Mvp; }
+
 
 		inline const glm::vec3& GetPosition() const { return m_CameraPosition; }
 

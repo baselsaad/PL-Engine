@@ -34,7 +34,7 @@ namespace PAL
 	Engine* Engine::s_Instance;
 
 	Engine::Engine(const EngineArgs& engineArgs)
-		: m_ShouldCloseWindow(false)
+		: m_ShouldClose(false)
 		, m_EngineState(EngineStates::UpdateAndRender)
 	{
 		CORE_PROFILER_FUNC();
@@ -59,7 +59,6 @@ namespace PAL
 		m_EventHandler.BindAction(EventType::ResizeWindow, this, &Engine::OnResizeWindow);
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
 		m_EventHandler.BindAction(EventType::KeyPressed, this, &Engine::OnKeyPressed);
-		m_EventHandler.BindAction(EventType::FrameBufferResize, this, &Engine::OnResizeFrameBuffer);
 
 		m_World = NewShared<World>(); // default map for now 
 		m_World->BeginPlay(); //TODO: move later, should be called from editor when press play 
@@ -78,19 +77,42 @@ namespace PAL
 		m_Window->Close();
 	}
 
+	void Engine::Exit()
+	{
+		m_ShouldClose = true;
+	}
+
+	void Engine::SetVSync(bool vsync)
+	{
+		if (m_Window->IsVsyncOn() != vsync)
+		{
+			m_Renderer->SetVSync(vsync);
+			m_Window->SetVsync(vsync);
+		}
+	}
+
 	void Engine::EngineLoop()
 	{
-		while (!m_ShouldCloseWindow)
+		while (!m_ShouldClose)
 		{
 			CORE_PROFILER_FRAME("CPU-Frame");
 
 			m_DeltaTime.Update();
-			m_Window->PollEvents();
-			
-			auto viewPortSize = Editor::GetInstance().GetViewportSize();
+			Renderer::GetStats().FrameTime = m_DeltaTime.GetAverageFrameTimeSeconds();
+			Renderer::GetStats().FrameTime_ms = m_DeltaTime.GetAverageFrameTimeMili();
+			Renderer::GetStats().FramesPerSecond = m_DeltaTime.GetAverageFPS();
 
+			m_Window->PollEvents();
+
+			// Move to Scene/Runtime Renderer
+			if (!m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetSpecification().IsSwapchainTarget)
 			{
-				m_Renderer->ResizeFrameBuffer(false, (int) viewPortSize.x, (int) viewPortSize.y);
+				m_RuntimeViewportSize = { Editor::GetInstance().GetViewportSize().x , Editor::GetInstance().GetViewportSize().y };
+				m_Renderer->ResizeFrameBuffer(false, (uint32_t)m_RuntimeViewportSize.x, (uint32_t)m_RuntimeViewportSize.y);
+			}
+			else
+			{
+				m_RuntimeViewportSize = { m_Window->GetWindowWidth() , m_Window->GetWindowHeight() };
 			}
 
 			// Start recording main command buffer
@@ -100,13 +122,13 @@ namespace PAL
 			{
 				case EngineStates::Render:
 				{
-					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
+					m_World->OnRender(m_DeltaTime.GetSeconds());
 					break;
-				} 
+				}
 				case EngineStates::UpdateAndRender:
 				{
 					m_World->OnUpdate(m_DeltaTime.GetSeconds());
-					m_World->OnRender(m_DeltaTime.GetSeconds(), m_Renderer);
+					m_World->OnRender(m_DeltaTime.GetSeconds());
 					break;
 				}
 				case EngineStates::Idle:
@@ -115,12 +137,13 @@ namespace PAL
 				}
 			}
 
+
 			// Render the world
 			m_Renderer->FlushDrawCommands();
 
 			// Render ImGui on top of everything
 			Editor::GetInstance().OnRenderImGui(m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetFrameBufferImage());
-		
+
 			// End recording main command buffer
 			m_Renderer->EndFrame();
 
@@ -150,7 +173,7 @@ namespace PAL
 
 	void Engine::OnCloseWindow(const CloseWindowEvent& event)
 	{
-		m_ShouldCloseWindow = true;
+		m_ShouldClose = true;
 	}
 
 	void Engine::OnKeyPressed(const KeyPressedEvent& event)
@@ -163,5 +186,5 @@ namespace PAL
 				m_Window->SetScreenMode(WindowMode::FullScreen);
 		}
 	}
-	
+
 }

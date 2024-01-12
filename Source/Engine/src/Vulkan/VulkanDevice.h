@@ -51,6 +51,9 @@ namespace PAL
 
 		void Shutdown();
 
+		VkCommandBuffer BeginSingleTimeCommands();
+		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
 		inline VkDevice GetVkDevice() { return m_Device; }
 		inline const SharedPtr<VulkanPhysicalDevice>& GetPhysicalDevice() { return m_PhysicalDevice; }
 

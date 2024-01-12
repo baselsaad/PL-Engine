@@ -16,7 +16,7 @@ namespace PAL
 
 		void BeginPlay();
 		void OnUpdate(float deltaTime);
-		void OnRender(float deltaTime, const SharedPtr<Renderer>& renderer);
+		void OnRender(float deltaTime);
 		void EndPlay();
 
 		template<typename ComponentType>

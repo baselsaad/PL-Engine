@@ -38,7 +38,7 @@ namespace PAL
 		virtual void WaitEvents() = 0;
 		virtual void SetVsync(bool enable) = 0;
 		
-		virtual void SetScreenMode(WindowMode mode) = 0;
+		virtual void SetScreenMode(WindowMode mode, uint32_t width = 1600, uint32_t height = 900) = 0;
 		virtual WindowMode GetWindowMode() = 0;
 	
 		virtual void OnResize(int width, int height) = 0;

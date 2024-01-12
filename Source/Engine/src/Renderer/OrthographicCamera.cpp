@@ -3,6 +3,8 @@
 #include "Event/Event.h"
 #include "Event/Input.h"
 #include "Event/EventHandler.h"
+#include "Math/Math.h"
+#include "glm/gtc/epsilon.hpp"
 
 namespace PAL
 {
@@ -10,8 +12,7 @@ namespace PAL
 		: Camera(aspectratio)
 		, m_Zoom(1.0f)
 	{
-		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
-		m_Mvp = m_ModelTransformation * m_ViewTransformation;
+		SetAspectRatio(aspectratio);
 	}
 
 	void OrthographicCamera::OnUpdate(float deltaTime)
@@ -59,7 +60,12 @@ namespace PAL
 
 	void OrthographicCamera::OnResizeWindow(const ResizeWindowEvent& e)
 	{
-		m_AspectRatio = (float)e.GetWidth() / (float)e.GetHeight();
+		SetAspectRatio((float)e.GetWidth() / (float)e.GetHeight());
+	}
+
+	void OrthographicCamera::SetAspectRatio(float aspectRatio)
+	{
+		m_AspectRatio = aspectRatio;
 		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
 	}
 

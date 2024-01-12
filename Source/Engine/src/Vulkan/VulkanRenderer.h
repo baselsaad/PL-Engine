@@ -25,10 +25,11 @@ namespace PAL
 		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) override;
 		
 		virtual void WaitForIdle() override;
-		virtual void ResizeFrameBuffer(bool resize = false, int width = 0, int height = 0) override;
+		virtual void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0) override;
 
-		virtual void RecordCommand(const std::function<void()>& drawCommand);
+		virtual void RecordDrawCommand(const std::function<void()>& drawCommand);
 		virtual void PresentFrame() override;
+		virtual void SetVSync(bool vsync) override;
 
 		inline static constexpr int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 		inline static uint32_t GetCurrentFrame() { return s_CurrentFrame; }
@@ -42,13 +43,14 @@ namespace PAL
 		SharedPtr<RenderPass> m_RenderPass;
 		SharedPtr<PipeLine> m_Pipline;
 		SharedPtr<VulkanFramebuffer> m_SceneFrameBuffer;
-		std::vector <std::function<void()>> m_Commands;
+		std::vector <std::function<void()>> m_DrawCommands;
 
 		SharedPtr<VulkanDevice> m_Device;
 
 		static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 		static uint32_t s_CurrentFrame;
 		static bool s_ResizeFrameBuffer;
+		static bool s_RecreateSwapChainRequested;
 
 		friend class VulkanSwapChain;
 	};

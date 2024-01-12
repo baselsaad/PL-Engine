@@ -56,7 +56,7 @@ namespace PAL
 		}
 
 		// Assignment operator for SharedPtr
-		SharedPtr& operator=(const SharedPtr<T>& other)
+		inline SharedPtr& operator=(const SharedPtr<T>& other)
 		{
 			if (this != &other)
 			{
@@ -66,49 +66,49 @@ namespace PAL
 		}
 
 		// Assignment operator for std::shared_ptr
-		SharedPtr& operator=(std::shared_ptr<T> other)
+		inline SharedPtr& operator=(std::shared_ptr<T> other)
 		{
 			StdSharedPtr = std::move(other);
 			return *this;
 		}
 
 		// Dereference operator
-		T& operator*() const
+		inline T& operator*() const
 		{
 			return *StdSharedPtr;
 		}
 
 		// Arrow operator
-		T* operator->() const
+		inline T* operator->() const
 		{
 			return StdSharedPtr.operator->();
 		}
 
 		// Equality operator
-		bool operator==(const SharedPtr<T>& other) const
+		inline bool operator==(const SharedPtr<T>& other) const
 		{
 			return StdSharedPtr == other.StdSharedPtr;
 		}
 
 		// Inequality operator
-		bool operator!=(const SharedPtr<T>& other) const
+		inline bool operator!=(const SharedPtr<T>& other) const
 		{
 			return StdSharedPtr != other.StdSharedPtr;
 		}
 
 		// Boolean conversion
-		explicit operator bool() const
+		inline explicit operator bool() const
 		{
 			return static_cast<bool>(StdSharedPtr);
 		}
 
 		// Comparison with nullptr
-		bool operator==(std::nullptr_t) const
+		inline bool operator==(std::nullptr_t) const
 		{
 			return StdSharedPtr == nullptr;
 		}
 
-		bool operator!=(std::nullptr_t) const
+		inline bool operator!=(std::nullptr_t) const
 		{
 			return StdSharedPtr != nullptr;
 		}

@@ -328,7 +328,7 @@ namespace PAL
 		}
 	}
 
-	void VulkanSwapChain::PresentFrame(const SharedPtr<VulkanFramebuffer>& sceneFrameBuffer, const SharedPtr<CommandBuffer>& commandBuffer)
+	void VulkanSwapChain::PresentFrame(const SharedPtr<CommandBuffer>& commandBuffer)
 	{
 		auto& commandBuffers = commandBuffer->GetCommandBuffers();
 		uint32_t& currentFrame = VulkanAPI::s_CurrentFrame; // by ref because we want to increment the value
@@ -369,10 +369,13 @@ namespace PAL
 
 		VkResult result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer || VulkanAPI::s_RecreateSwapChainRequested)
 		{
-			VulkanAPI::s_ResizeFrameBuffer = false; // reset
 			RecreateSwapChain();
+
+			// reset
+			VulkanAPI::s_ResizeFrameBuffer = false;
+			VulkanAPI::s_RecreateSwapChainRequested = false;
 		}
 		else if (result != VK_SUCCESS)
 		{
@@ -382,45 +385,9 @@ namespace PAL
 		currentFrame = (currentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
 	}
 
-	VkCommandBuffer VulkanSwapChain::BeginSingleTimeCommands(VkCommandPool commandPool)
-	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = commandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, &commandBuffer);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-		return commandBuffer;
-	}
-
-	void VulkanSwapChain::EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer)
-	{
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue());
-
-		vkFreeCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), commandPool, 1, &commandBuffer);
-	}
-
 	void VulkanSwapChain::TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands(m_Device->GetMainCommandBuffer()->GetCommandPool());
-		//VkCommandBuffer commandBuffer = m_Device->GetCurrentCommandBuffer();
+		VkCommandBuffer commandBuffer = m_Device->BeginSingleTimeCommands();
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -476,7 +443,7 @@ namespace PAL
 			1, &barrier
 		);
 
-		EndSingleTimeCommands(m_Device->GetMainCommandBuffer()->GetCommandPool(), commandBuffer);
+		m_Device->EndSingleTimeCommands(commandBuffer);
 	}
 
 

@@ -13,6 +13,8 @@ namespace PAL
 		virtual void OnUpdate(float deltaTime) override;
 		virtual void SetupInput(EventHandler& e) override;
 		virtual CameraType GetCameraType() const override { return CameraType::Orthographic; }
+		virtual void SetAspectRatio(float aspectRatio) override;
+		virtual float GetAspectRatio() override { return m_AspectRatio; }
 
 		void CalculateViewProjectionMatrix();
 		void OnMouseScroll(const MouseScrolledEvent& e);

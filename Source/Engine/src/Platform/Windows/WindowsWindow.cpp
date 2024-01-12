@@ -26,8 +26,7 @@ namespace PAL
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 		m_WindowHandle = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
-		if (data.Mode == WindowMode::FullScreen)
-			SetScreenMode(WindowMode::FullScreen);
+		SetScreenMode(data.Mode, data.Width, data.Height);
 
 		ASSERT(m_WindowHandle, "Window is null!");
 		SetVsync(data.Vsync);
@@ -241,12 +240,12 @@ namespace PAL
 		}
 	}
 
-	void WindowsWindow::SetScreenMode(WindowMode mode)
+	void WindowsWindow::SetScreenMode(WindowMode mode, uint32_t width /* = 1600*/, uint32_t height /* = 900*/)
 	{
 		if (mode == WindowMode::Windowed)
 		{
-			m_WindowData.Width = 800;
-			m_WindowData.Height = 600;
+			m_WindowData.Width = width;
+			m_WindowData.Height = height;
 			m_WindowData.Mode = WindowMode::Windowed;
 
 			const GLFWvidmode* videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());

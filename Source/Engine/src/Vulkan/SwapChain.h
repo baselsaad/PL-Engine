@@ -31,10 +31,8 @@ namespace PAL
 		void CreateImageViews();
 		void CleanupSwapChain();
 		void RecreateSwapChain();
-		void PresentFrame(const SharedPtr<VulkanFramebuffer>& sceneFrameBuffer, const SharedPtr<CommandBuffer>& commandBuffer);
+		void PresentFrame(const SharedPtr<CommandBuffer>& commandBuffer);
 		
-		VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
-		void EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer);
 		void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

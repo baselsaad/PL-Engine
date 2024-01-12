@@ -16,6 +16,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <map>
+#include <deque>
+
 
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
@@ -32,7 +34,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "Math/Math.h"
+#include "glm/gtc/epsilon.hpp"
 
 #ifdef PLATFORM_WINDOWS
 	#include <Windows.h>

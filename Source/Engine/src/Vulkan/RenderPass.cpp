@@ -12,9 +12,6 @@ namespace PAL
 	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, bool isSwapchainTarget)
 		: m_IsSwapchainTarget(isSwapchainTarget)
 	{
-		VkClearValue clearValues[1];
-		clearValues[0].color = { {0.2f, 0.1f,0.0f, 1.0f} };
-
 		VkAttachmentDescription attachmentDescription = {};
 		attachmentDescription.flags = 0;
 		attachmentDescription.format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();

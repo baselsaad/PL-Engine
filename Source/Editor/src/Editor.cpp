@@ -38,10 +38,10 @@ namespace PAL
 		engineArgs.AppName = "Editor";
 
 		WindowData window;
-		window.Width = 800.0f;
-		window.Height = 600.0f;
+		window.Width = 1600;
+		window.Height = 900;
 		window.Title = "PAL Editor";
-		window.Vsync = false;
+		window.Vsync = true;
 		window.Mode = WindowMode::Windowed;
 
 		engineArgs.EngineWindowData = window;
@@ -74,6 +74,7 @@ namespace PAL
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
+		SetDarkThemeColors();
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -107,21 +108,14 @@ namespace PAL
 
 		ImGui_ImplGlfw_InitForVulkan(*Engine::Get()->GetWindow(), true);
 
-		// Upload Font
-		{
-			//VkCommandBuffer command_buffer = beginSingleTimeCommands();
-			//ImGui_ImplVulkan_CreateFontsTexture();
-			//endSingleTimeCommands(command_buffer);
-		}
-
 		CreateRenderPass();
 
 		FramebufferSpecification imguiSpec = {};
 		imguiSpec.BufferCount = swapchain->GetSwapChainImages().size();
 		imguiSpec.ColorFormat = swapchain->GetSwapChainImageFormat();
 		imguiSpec.DepthFormat = VK_FORMAT_UNDEFINED;
-		imguiSpec.Width = 800;
-		imguiSpec.Height = 600;
+		imguiSpec.Width = swapchain->GetSwapChainExtent().width;
+		imguiSpec.Height = swapchain->GetSwapChainExtent().height;
 		imguiSpec.UseDepth = false;
 		imguiSpec.IsSwapchainTarget = true;
 		imguiSpec.DebugName = "imgui Framebuffer";
@@ -147,6 +141,29 @@ namespace PAL
 		init_info.CheckVkResultFn = nullptr;
 
 		ImGui_ImplVulkan_Init(&init_info, m_ImGuiRenderPass);
+
+		// Upload Font
+		{
+			float fontSize = 20.0f;
+
+			auto boldFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-Bold.ttf", fontSize);
+			auto regularFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-Regular.ttf", fontSize);
+			auto lightFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-Light.ttf", fontSize);
+			auto boldItalicFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-BoldItalic.ttf", fontSize);
+			auto regularItalicFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-Italic.ttf", fontSize);
+			auto lightItalicFont = io.Fonts->AddFontFromFileTTF(PROJECT_ROOT "/Source/Engine/res/fonts/opensans/OpenSans-LightItalic.ttf", fontSize);
+
+			io.FontDefault = regularFont;
+
+			m_ImGuiFonts.emplace(ImGuiFonts::Regular, regularFont);
+			m_ImGuiFonts.emplace(ImGuiFonts::Bold, boldFont);
+			m_ImGuiFonts.emplace(ImGuiFonts::Light, lightFont);
+			m_ImGuiFonts.emplace(ImGuiFonts::BoldItalic, boldItalicFont);
+			m_ImGuiFonts.emplace(ImGuiFonts::RegularItalic, regularItalicFont);
+			m_ImGuiFonts.emplace(ImGuiFonts::LightItalic, lightItalicFont);
+
+			ImGui_ImplVulkan_CreateFontsTexture();
+		}
 
 		constexpr int framesInFlight = VulkanAPI::GetMaxFramesInFlight();
 		s_ImGuiCommandBuffers.resize(framesInFlight);
@@ -234,41 +251,216 @@ namespace PAL
 		VK_CHECK_RESULT(vkCreateRenderPass(VulkanContext::GetVulkanDevice()->GetVkDevice(), &rp_info, nullptr, &m_ImGuiRenderPass));
 	}
 
-	VkDescriptorSet s_TextureID; 
+	void Editor::SetDarkThemeColors()
+	{
+		auto& colors = ImGui::GetStyle().Colors;
+		colors[ImGuiCol_WindowBg] = ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f };
+
+		// Headers
+		colors[ImGuiCol_Header] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_HeaderActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Buttons
+		colors[ImGuiCol_Button] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_ButtonActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Frame BG
+		colors[ImGuiCol_FrameBg] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_FrameBgHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_FrameBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Tabs
+		colors[ImGuiCol_Tab] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabHovered] = ImVec4{ 0.38f, 0.3805f, 0.381f, 1.0f };
+		colors[ImGuiCol_TabActive] = ImVec4{ 0.28f, 0.2805f, 0.281f, 1.0f };
+		colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+
+		// Title
+		colors[ImGuiCol_TitleBg] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+	}
+
+	VkDescriptorSet s_TextureID;
 	void Editor::OnRenderImGui(VulkanImage* image)
 	{
 		BeginFrame();
 		{
-			//static bool show_demo_window = true;
-			//ImGui::ShowDemoWindow(&show_demo_window);
+			CORE_PROFILER_FUNC();
 
-			ImGui::Begin("Viewport");
+			// Note: Switch this to true to enable dockspace
+			static bool dockspaceOpen = true;
+			static bool opt_fullscreen_persistant = true;
+			bool opt_fullscreen = opt_fullscreen_persistant;
+			static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
-			m_ViewportSize = ImGui::GetContentRegionAvail();
-			auto& sceneFramebuffer = Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer();
-			auto& framebufferSpec = sceneFramebuffer->GetSpecification();
-
-			if (!framebufferSpec.IsSwapchainTarget)
+			// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+			// because it would be confusing to have two docking targets within each others.
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+			if (opt_fullscreen)
 			{
-				if (image->ImageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+				ImGuiViewport* viewport = ImGui::GetMainViewport();
+				ImGui::SetNextWindowPos(viewport->Pos);
+				ImGui::SetNextWindowSize(viewport->Size);
+				ImGui::SetNextWindowViewport(viewport->ID);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+			}
+
+			// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+			if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+				window_flags |= ImGuiWindowFlags_NoBackground;
+
+			// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+			// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive, 
+			// all active windows docked into it will lose their parent and become undocked.
+			// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
+			// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+			ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
+			ImGui::PopStyleVar();
+
+			if (opt_fullscreen)
+				ImGui::PopStyleVar(2);
+
+			// DockSpace
+			ImGuiIO& io = ImGui::GetIO();
+			ImGuiStyle& style = ImGui::GetStyle();
+			float minWinSizeX = style.WindowMinSize.x;
+			style.WindowMinSize.x = 370.0f;
+			if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+			{
+				ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+				ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+			}
+
+			style.WindowMinSize.x = minWinSizeX;
+
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu("File"))
 				{
-					VulkanContext::GetSwapChain()->TransitionImageLayout(image->ColorImage, image->ImageLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-					image->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+					// which we can't undo at the moment without finer window depth/z control.
+					//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
+					if (ImGui::MenuItem("New", "Ctrl+N"))
+					{
+						//NewScene();
+					}
+
+					if (ImGui::MenuItem("Open...", "Ctrl+O"))
+					{
+						//OpenScene();
+					}
+
+					if (ImGui::MenuItem("Save", "Ctrl+S"))
+					{
+						//SaveScene();
+					}
+
+					if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+					{
+						//SaveSceneAs();
+					}
+
+					if (ImGui::MenuItem("Exit"))
+					{
+						Engine::Get()->Exit();
+					}
+
+					ImGui::EndMenu();
 				}
 
-				if (s_TextureID != VK_NULL_HANDLE)
+				ImGui::EndMenuBar();
+			}
+
+			// Stats View
+			{
+				ImGui::Begin("Stats");
+
+				RenderStats& stats = Renderer::GetStats();
+				ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+				ImGui::Text("Quads: %d", stats.Quads);
+				ImGui::Text("VertexBufferCount: %d", stats.VertexBufferCount);
+				ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
+				ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
+				ImGui::Text("FPS: %d", stats.FramesPerSecond);
+
+				ImGui::End();
+			}
+
+			// Settings View
+			{
+				ImGui::Begin("Settings");
+				auto& window = Engine::Get()->GetWindow();
+
+				bool vsync = window->IsVsyncOn();
+				ImGui::Checkbox("VSync", &vsync);
+				if (vsync != window->IsVsyncOn())
+					Engine::Get()->SetVSync(vsync);
+
+				ImGui::End();
+			}
+
+			// World Viewport
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
+
+				ImGui::PushFont(GetFont(ImGuiFonts::BoldItalic));
+				ImGui::Begin("Viewport");
+				ImGui::PopFont();
+
+				auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+				auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+				auto viewportOffset = ImGui::GetWindowPos();
+
+				m_ViewportSize = ImGui::GetContentRegionAvail();
+
+				auto& sceneFramebuffer = Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer();
+				auto& framebufferSpec = sceneFramebuffer->GetSpecification();
+
+				if (!framebufferSpec.IsSwapchainTarget)
 				{
-					ImGui_ImplVulkan_RemoveTexture(s_TextureID);
-					s_TextureID = VK_NULL_HANDLE;
+					if (image->ImageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+					{
+						VulkanContext::GetSwapChain()->TransitionImageLayout(image->ColorImage, image->ImageLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+						image->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					}
+
+					if (s_TextureID != VK_NULL_HANDLE)
+					{
+						ImGui_ImplVulkan_RemoveTexture(s_TextureID);
+						s_TextureID = VK_NULL_HANDLE;
+					}
+
+					s_TextureID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+					ImGui::Image(s_TextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
 				}
 
-				s_TextureID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-				ImGui::Image(s_TextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
+				if (ImGui::BeginDragDropTarget())
+				{
+					//if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					//{
+					//	const wchar_t* path = (const wchar_t*)payload->Data;
+					//	OpenScene(std::filesystem::path(g_AssetPath) / path);
+					//}
+					ImGui::EndDragDropTarget();
+				}
+
+
+				ImGui::End();
+				ImGui::PopStyleVar();
 			}
 
 			ImGui::End();
+
+			EndFrame();
 		}
-		EndFrame();
 	}
 
 	void Editor::BeginFrame()

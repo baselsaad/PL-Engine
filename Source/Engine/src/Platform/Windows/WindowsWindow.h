@@ -30,7 +30,7 @@ namespace PAL
 
 		virtual void WaitEvents() override;
 		virtual void GetFramebufferSize(int& width, int& height) override;
-		virtual void SetScreenMode(WindowMode mode) override;
+		virtual void SetScreenMode(WindowMode mode, uint32_t width = 1600, uint32_t height = 900) override;
 		virtual WindowMode GetWindowMode() override { return m_WindowData.Mode; }
 
 		virtual bool ShouldClose() override;

@@ -28,7 +28,6 @@ namespace PAL
 		}
 
 		m_RenderAPI->Init();
-
 		m_BatchRenderer = new BatchRenderer(VulkanContext::GetVulkanDevice()->GetMainCommandBuffer());
 	}
 
@@ -48,8 +47,6 @@ namespace PAL
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		//m_Projection = camera.GetModellViewProjection();
-
 		m_RenderAPI->BeginFrame();
 		m_BatchRenderer->Begin();
 	}
@@ -61,8 +58,6 @@ namespace PAL
 		// Quads
 		m_BatchRenderer->BindCurrentQuadBatch();
 		m_RenderAPI->DrawQuad(m_BatchRenderer->GetVertexBuffer(), m_BatchRenderer->GetIndexBuffer(), m_BatchRenderer->GetIndexCount(), m_Projection);
-
-		s_RenderStats.DrawCalls++;
 	}
 
 	void Renderer::EndFrame()
@@ -75,14 +70,13 @@ namespace PAL
 		m_RenderAPI->EndFrame();
 		m_BatchRenderer->End();
 
-		//std::cout << "Quads: " << s_RenderStats.Quads << ", DrawCalls: " << s_RenderStats.DrawCalls 
-		//	<< ", VertexBufferCount: " << s_RenderStats.VertexBufferCount << " * 3\n";
-
 		s_RenderStats.Reset();
 	}
 
 	void Renderer::FlushDrawCommands()
 	{
+		CORE_PROFILER_FUNC();
+
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		m_RenderAPI->FlushDrawCommands();
@@ -124,11 +118,11 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void Renderer::RecordCommand(const std::function<void()>& command)
+	void Renderer::RecordDrawCommand(const std::function<void()>& command)
 	{
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		m_RenderAPI->RecordCommand(command);
+		m_RenderAPI->RecordDrawCommand(command);
 	}
 
 	void Renderer::WaitForIdle()
@@ -138,14 +132,21 @@ namespace PAL
 		m_RenderAPI->WaitForIdle();
 	}
 
-	void Renderer::ResizeFrameBuffer(bool resize, int width, int height)
+	void Renderer::ResizeFrameBuffer(bool resize, uint32_t width, uint32_t height)
 	{
 		m_RenderAPI->ResizeFrameBuffer(resize, width, height);
 	}
 
 	void Renderer::PresentFrame()
 	{
+		CORE_PROFILER_FUNC();
+
 		m_RenderAPI->PresentFrame();
+	}
+
+	void Renderer::SetVSync(bool vsync)
+	{
+		m_RenderAPI->SetVSync(vsync);
 	}
 
 }

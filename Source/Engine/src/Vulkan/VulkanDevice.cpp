@@ -35,7 +35,7 @@ namespace PAL
 		}
 
 		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
-		
+
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
 		m_DeviceName = properties.deviceName;
@@ -105,7 +105,7 @@ namespace PAL
 		return indices.isComplete() && extensionsSupported && swapChainAdequate;
 	}
 
-	
+
 
 	bool VulkanPhysicalDevice::CheckDeviceExtensionSupport()
 	{
@@ -172,7 +172,7 @@ namespace PAL
 		createInfo.enabledLayerCount = 0;
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-		
+
 		//Enabling device extensions
 		auto extensions = m_PhysicalDevice->GetVulkanDeviceExtensions();
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -190,6 +190,41 @@ namespace PAL
 		m_CommandBuffer->Shutdown();
 
 		vkDestroyDevice(m_Device, nullptr);
+	}
+
+	VkCommandBuffer VulkanDevice::BeginSingleTimeCommands()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = m_CommandBuffer->GetCommandPool();
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		return commandBuffer;
+	}
+
+	void VulkanDevice::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+	{
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_GraphicsQueue);
+
+		vkFreeCommandBuffers(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_CommandBuffer->GetCommandPool(), 1, &commandBuffer);
 	}
 
 	void VulkanDevice::CreateMainCommandBuffer()

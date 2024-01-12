@@ -20,6 +20,10 @@ namespace PAL
 		int DrawCalls = 0;
 		int VertexBufferCount = 0;
 
+		float FrameTime = 0.0f;
+		float FrameTime_ms = 0.0f;
+		uint32_t FramesPerSecond = 0;
+
 		void Reset()
 		{
 			Quads = 0;
@@ -42,11 +46,12 @@ namespace PAL
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 
-		void RecordCommand(const std::function<void()>& command);
+		void RecordDrawCommand(const std::function<void()>& command);
 		void WaitForIdle();
-		void ResizeFrameBuffer(bool resize = false, int width = 0, int height = 0);
+		void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0);
 
 		void PresentFrame();
+		void SetVSync(bool vsync);
 
 		static RenderStats& GetStats() { return s_RenderStats; }
 		inline SharedPtr<IRenderAPI>& GetRenderAPI() { return m_RenderAPI; }
@@ -55,10 +60,12 @@ namespace PAL
 		void Flush();
 
 	private:
+		static RenderStats s_RenderStats;
+
 		SharedPtr<IRenderAPI> m_RenderAPI;
 		BatchRenderer* m_BatchRenderer;
-		glm::mat4 m_Projection; // remove later
 
-		static RenderStats s_RenderStats;
+		// remove later
+		glm::mat4 m_Projection; 
 	};
 }

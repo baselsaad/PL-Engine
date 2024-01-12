@@ -28,9 +28,14 @@ namespace PAL
 		// Stop and free 
 		virtual void Stop();
 
+		virtual void Exit();
+
+		void SetVSync(bool vsync);
+
 		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
 		inline EventHandler& GetInputHandler() { return m_EventHandler; }
 		inline SharedPtr<Renderer>& GetRenderer() { return m_Renderer; }
+		inline const glm::vec2& GetViewportSize() const { return m_RuntimeViewportSize; };
 
 	private:
 		virtual void EngineLoop();
@@ -51,6 +56,9 @@ namespace PAL
 		EngineStates m_EngineState;
 		EventHandler m_EventHandler;
 
-		bool m_ShouldCloseWindow;
+		bool m_ShouldClose;
+
+		//TODO: Move to runtimeRenderer Class 
+		glm::vec2 m_RuntimeViewportSize;
 	};
 }

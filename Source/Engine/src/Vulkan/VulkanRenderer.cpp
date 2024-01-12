@@ -23,6 +23,7 @@ namespace PAL
 {
 	uint32_t VulkanAPI::s_CurrentFrame = 0;
 	bool VulkanAPI::s_ResizeFrameBuffer = false;
+	bool VulkanAPI::s_RecreateSwapChainRequested = false;
 
 	void VulkanAPI::Init()
 	{
@@ -40,8 +41,8 @@ namespace PAL
 		sceneSpec.BufferCount = VulkanContext::GetSwapChain()->GetSwapChainImages().size();
 		sceneSpec.ColorFormat = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
 		sceneSpec.DepthFormat = VK_FORMAT_UNDEFINED;
-		sceneSpec.Width = 800;
-		sceneSpec.Height = 600;
+		sceneSpec.Width = 1600;
+		sceneSpec.Height = 900;
 		sceneSpec.UseDepth = false;
 		sceneSpec.IsSwapchainTarget = isSwapChainTarget;
 		sceneSpec.DebugName = "Scene Framebuffer";
@@ -69,25 +70,30 @@ namespace PAL
 		vkDeviceWaitIdle(VulkanContext::GetVulkanDevice()->GetVkDevice());
 	}
 
-	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, int width /*= 0*/, int height /*= 0*/)
+	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, uint32_t width /*= 0*/, uint32_t height /*= 0*/)
 	{
 		s_ResizeFrameBuffer = resize;
 
-		if (width != 0 && height != 0 && width != m_SceneFrameBuffer->GetSpecification().Width
+		if (width > 0 && height > 0 && width != m_SceneFrameBuffer->GetSpecification().Width
 			&& height != m_SceneFrameBuffer->GetSpecification().Height)
 		{
 			m_SceneFrameBuffer->Resize(width, height);
 		}
 	}
 
-	void VulkanAPI::RecordCommand(const std::function<void()>& command)
+	void VulkanAPI::RecordDrawCommand(const std::function<void()>& command)
 	{
-		m_Commands.push_back(command);
+		m_DrawCommands.push_back(command);
 	}
 
 	void VulkanAPI::PresentFrame()
 	{
-		VulkanContext::GetSwapChain()->PresentFrame(m_SceneFrameBuffer, m_Device->GetMainCommandBuffer());
+		VulkanContext::GetSwapChain()->PresentFrame(m_Device->GetMainCommandBuffer());
+	}
+
+	void VulkanAPI::SetVSync(bool vsync)
+	{
+		s_RecreateSwapChainRequested = true;
 	}
 
 	void VulkanAPI::BeginFrame()
@@ -141,13 +147,16 @@ namespace PAL
 		m_RenderPass->Begin(m_Device->GetCurrentCommandBuffer(), swapchain->GetImageIndex());
 		{
 			// Execute Draw Commands
-			for (auto& func : m_Commands)
+			for (auto& func : m_DrawCommands)
 			{
 				if (func)
+				{
 					func();
+				}
 			}
 
-			m_Commands.clear();
+			Renderer::GetStats().DrawCalls = m_DrawCommands.size();
+			m_DrawCommands.clear();
 		}
 		m_RenderPass->End(m_Device->GetCurrentCommandBuffer());
 	}
@@ -169,7 +178,7 @@ namespace PAL
 			vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
 		};
 
-		RecordCommand(drawCommand);
+		RecordDrawCommand(drawCommand);
 	}
 
 }

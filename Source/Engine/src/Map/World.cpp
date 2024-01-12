@@ -15,7 +15,7 @@ namespace PAL
 	static void BenchmarkBatchRenderer(World* world, OrthographicCamera& camera)
 	{
 		//float cord = camera.GetZoom() * 2.0f;
-		float cord = 10.0f;
+		float cord = 5.0f;
 		const glm::vec3 scale(0.45f);
 
 		for (float y = -cord; y < 5.0f; y += 0.5f)
@@ -72,17 +72,26 @@ namespace PAL
 		// Update Script and physics later		
 	}
 
-	void World::OnRender(float deltaTime, const SharedPtr<Renderer>& renderer)
+	void World::OnRender(float deltaTime)
 	{
 		CORE_PROFILER_FUNC();
 
+		const glm::vec2& viewportSize = Engine::Get()->GetViewportSize();
+		float aspectRatio = viewportSize.x / viewportSize.y;
+		if (glm::epsilonNotEqual(aspectRatio, m_ActiveCamera->GetAspectRatio(), EPSLON))
+		{
+			m_ActiveCamera->SetAspectRatio(aspectRatio);
+		}
+		
 		m_ActiveCamera->OnUpdate(deltaTime);
-		renderer->SetProjection(m_ActiveCamera->GetModellViewProjection());
+
+		// @TODO: Move to Runtime renderer 
+		Engine::Get()->GetRenderer()->SetProjection(m_ActiveCamera->GetModellViewProjection());
 
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
 		for (auto [entity, transform, renderComponent] : view.each())
 		{
-			renderer->DrawQuad(transform, renderComponent.GetColor());
+			Engine::Get()->GetRenderer()->DrawQuad(transform, renderComponent.GetColor());
 		}
 	}
 
