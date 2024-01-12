@@ -98,8 +98,8 @@ namespace PAL
 			CORE_PROFILER_FRAME("CPU-Frame");
 
 			m_DeltaTime.Update();
-			Renderer::GetStats().FrameTime = m_DeltaTime.GetAverageFrameTimeSeconds();
-			Renderer::GetStats().FrameTime_ms = m_DeltaTime.GetAverageFrameTimeMili();
+			Renderer::GetStats().FrameTime = m_DeltaTime.GetAvgDeltaTimeInSeconds();
+			Renderer::GetStats().FrameTime_ms = m_DeltaTime.GetAvgDeltaTimeInMilliSeconds();
 			Renderer::GetStats().FramesPerSecond = m_DeltaTime.GetAverageFPS();
 
 			m_Window->PollEvents();
@@ -122,13 +122,13 @@ namespace PAL
 			{
 				case EngineStates::Render:
 				{
-					m_World->OnRender(m_DeltaTime.GetSeconds());
+					m_World->OnRender(m_DeltaTime.GetDeltaInSeconds());
 					break;
 				}
 				case EngineStates::UpdateAndRender:
 				{
-					m_World->OnUpdate(m_DeltaTime.GetSeconds());
-					m_World->OnRender(m_DeltaTime.GetSeconds());
+					m_World->OnUpdate(m_DeltaTime.GetDeltaInSeconds());
+					m_World->OnRender(m_DeltaTime.GetDeltaInSeconds());
 					break;
 				}
 				case EngineStates::Idle:
@@ -142,7 +142,9 @@ namespace PAL
 			m_Renderer->FlushDrawCommands();
 
 			// Render ImGui on top of everything
+			Editor::GetInstance().BeginFrame();
 			Editor::GetInstance().OnRenderImGui(m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetFrameBufferImage());
+			Editor::GetInstance().EndFrame();
 
 			// End recording main command buffer
 			m_Renderer->EndFrame();

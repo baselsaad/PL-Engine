@@ -8,21 +8,23 @@ namespace PAL
 	void DeltaTime::Update()
 	{
 		// DeltaTime
-		double now = glfwGetTime();
-		m_FrameTime = (now - m_LastFrameTime);
-		m_LastFrameTime = now;
+		double currentTime = glfwGetTime();
+		m_DeltaTime.FrameTime = currentTime - m_DeltaTime.LastFrameTime;
+		m_DeltaTime.LastFrameTime = currentTime;
 
-		m_TotalFrameTime -= m_FrameTimeArray[m_FrameTimeIndex];
-		m_FrameTimeArray[m_FrameTimeIndex] = m_FrameTime;
-		m_TotalFrameTime += m_FrameTime;
+		// FPS
+		m_AvgData.FrameCount++;
+		m_AvgData.TotalFrameTimeInOneSec += m_DeltaTime.FrameTime;
 
-		m_FrameTimeIndex = (m_FrameTimeIndex + 1) % m_MaxSamples;
+		if (currentTime - m_AvgData.LastFrameTime >= 1.0)
+		{
+			m_AvgData.FPS = m_AvgData.FrameCount / (currentTime - m_AvgData.LastFrameTime);
+			m_AvgData.AvgFrameTime = m_AvgData.TotalFrameTimeInOneSec / m_AvgData.FPS;
 
-		CalculateAverage();
+			m_AvgData.LastFrameTime = currentTime;
+			m_AvgData.FrameCount = 0;
+			m_AvgData.TotalFrameTimeInOneSec = 0.0f;
+		}
 	}
 
-	void DeltaTime::CalculateAverage()
-	{
-		m_AverageFrameTime = m_TotalFrameTime / static_cast<double>(m_MaxSamples);
-	}
 }

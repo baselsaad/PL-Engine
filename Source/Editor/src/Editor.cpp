@@ -41,7 +41,7 @@ namespace PAL
 		window.Width = 1600;
 		window.Height = 900;
 		window.Title = "PAL Editor";
-		window.Vsync = true;
+		window.Vsync = false;
 		window.Mode = WindowMode::Windowed;
 
 		engineArgs.EngineWindowData = window;
@@ -287,184 +287,175 @@ namespace PAL
 	VkDescriptorSet s_TextureID;
 	void Editor::OnRenderImGui(VulkanImage* image)
 	{
-		BeginFrame();
+		CORE_PROFILER_FUNC();
+
+		// Note: Switch this to true to enable dockspace
+		static bool dockspaceOpen = true;
+		static bool opt_fullscreen_persistant = true;
+		bool opt_fullscreen = opt_fullscreen_persistant;
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+		// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+		// because it would be confusing to have two docking targets within each others.
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		if (opt_fullscreen)
 		{
-			CORE_PROFILER_FUNC();
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGui::SetNextWindowPos(viewport->Pos);
+			ImGui::SetNextWindowSize(viewport->Size);
+			ImGui::SetNextWindowViewport(viewport->ID);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+		}
 
-			// Note: Switch this to true to enable dockspace
-			static bool dockspaceOpen = true;
-			static bool opt_fullscreen_persistant = true;
-			bool opt_fullscreen = opt_fullscreen_persistant;
-			static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+		// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+			window_flags |= ImGuiWindowFlags_NoBackground;
 
-			// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-			// because it would be confusing to have two docking targets within each others.
-			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-			if (opt_fullscreen)
+		// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+		// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive, 
+		// all active windows docked into it will lose their parent and become undocked.
+		// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
+		// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
+		ImGui::PopStyleVar();
+
+		if (opt_fullscreen)
+			ImGui::PopStyleVar(2);
+
+		// DockSpace
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuiStyle& style = ImGui::GetStyle();
+		float minWinSizeX = style.WindowMinSize.x;
+		style.WindowMinSize.x = 370.0f;
+		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+		{
+			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		}
+
+		style.WindowMinSize.x = minWinSizeX;
+
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
 			{
-				ImGuiViewport* viewport = ImGui::GetMainViewport();
-				ImGui::SetNextWindowPos(viewport->Pos);
-				ImGui::SetNextWindowSize(viewport->Size);
-				ImGui::SetNextWindowViewport(viewport->ID);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-			}
-
-			// When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
-			if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-				window_flags |= ImGuiWindowFlags_NoBackground;
-
-			// Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-			// This is because we want to keep our DockSpace() active. If a DockSpace() is inactive, 
-			// all active windows docked into it will lose their parent and become undocked.
-			// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
-			// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-			ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
-			ImGui::PopStyleVar();
-
-			if (opt_fullscreen)
-				ImGui::PopStyleVar(2);
-
-			// DockSpace
-			ImGuiIO& io = ImGui::GetIO();
-			ImGuiStyle& style = ImGui::GetStyle();
-			float minWinSizeX = style.WindowMinSize.x;
-			style.WindowMinSize.x = 370.0f;
-			if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-			{
-				ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-				ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-			}
-
-			style.WindowMinSize.x = minWinSizeX;
-
-			if (ImGui::BeginMenuBar())
-			{
-				if (ImGui::BeginMenu("File"))
+				// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+				// which we can't undo at the moment without finer window depth/z control.
+				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
+				if (ImGui::MenuItem("New", "Ctrl+N"))
 				{
-					// Disabling fullscreen would allow the window to be moved to the front of other windows, 
-					// which we can't undo at the moment without finer window depth/z control.
-					//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
-					if (ImGui::MenuItem("New", "Ctrl+N"))
-					{
-						//NewScene();
-					}
-
-					if (ImGui::MenuItem("Open...", "Ctrl+O"))
-					{
-						//OpenScene();
-					}
-
-					if (ImGui::MenuItem("Save", "Ctrl+S"))
-					{
-						//SaveScene();
-					}
-
-					if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
-					{
-						//SaveSceneAs();
-					}
-
-					if (ImGui::MenuItem("Exit"))
-					{
-						Engine::Get()->Exit();
-					}
-
-					ImGui::EndMenu();
+					//NewScene();
 				}
 
-				ImGui::EndMenuBar();
-			}
-
-			// Stats View
-			{
-				ImGui::Begin("Stats");
-
-				RenderStats& stats = Renderer::GetStats();
-				ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-				ImGui::Text("Quads: %d", stats.Quads);
-				ImGui::Text("VertexBufferCount: %d", stats.VertexBufferCount);
-				ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
-				ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
-				ImGui::Text("FPS: %d", stats.FramesPerSecond);
-
-				ImGui::End();
-			}
-
-			// Settings View
-			{
-				ImGui::Begin("Settings");
-				auto& window = Engine::Get()->GetWindow();
-
-				bool vsync = window->IsVsyncOn();
-				ImGui::Checkbox("VSync", &vsync);
-				if (vsync != window->IsVsyncOn())
-					Engine::Get()->SetVSync(vsync);
-
-				ImGui::End();
-			}
-
-			// World Viewport
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-
-				ImGui::PushFont(GetFont(ImGuiFonts::BoldItalic));
-				ImGui::Begin("Viewport");
-				ImGui::PopFont();
-
-				auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-				auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-				auto viewportOffset = ImGui::GetWindowPos();
-
-				m_ViewportSize = ImGui::GetContentRegionAvail();
-
-				auto& sceneFramebuffer = Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer();
-				auto& framebufferSpec = sceneFramebuffer->GetSpecification();
-
-				if (!framebufferSpec.IsSwapchainTarget)
+				if (ImGui::MenuItem("Open...", "Ctrl+O"))
 				{
-					if (image->ImageLayout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-					{
-						VulkanContext::GetSwapChain()->TransitionImageLayout(image->ColorImage, image->ImageLayout, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-						image->ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-					}
-
-					if (s_TextureID != VK_NULL_HANDLE)
-					{
-						ImGui_ImplVulkan_RemoveTexture(s_TextureID);
-						s_TextureID = VK_NULL_HANDLE;
-					}
-
-					s_TextureID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-					ImGui::Image(s_TextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
+					//OpenScene();
 				}
 
-				if (ImGui::BeginDragDropTarget())
+				if (ImGui::MenuItem("Save", "Ctrl+S"))
 				{
-					//if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-					//{
-					//	const wchar_t* path = (const wchar_t*)payload->Data;
-					//	OpenScene(std::filesystem::path(g_AssetPath) / path);
-					//}
-					ImGui::EndDragDropTarget();
+					//SaveScene();
 				}
 
+				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+				{
+					//SaveSceneAs();
+				}
 
-				ImGui::End();
-				ImGui::PopStyleVar();
+				if (ImGui::MenuItem("Exit"))
+				{
+					Engine::Get()->Exit();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
+		}
+
+		// Stats View
+		{
+			ImGui::Begin("Stats");
+
+			RenderStats& stats = Renderer::GetStats();
+			ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+			ImGui::Text("Quads: %d", stats.Quads);
+			ImGui::Text("VertexBufferCount: %d", stats.VertexBufferCount);
+			ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
+			ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
+			ImGui::Text("FPS: %d", stats.FramesPerSecond);
+
+			ImGui::End();
+		}
+
+		// Settings View
+		{
+			ImGui::Begin("Settings");
+			auto& window = Engine::Get()->GetWindow();
+
+			bool vsync = window->IsVsyncOn();
+			ImGui::Checkbox("VSync", &vsync);
+			if (vsync != window->IsVsyncOn())
+				Engine::Get()->SetVSync(vsync);
+
+			ImGui::End();
+		}
+
+		// World Viewport
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
+
+			ImGui::PushFont(GetFont(ImGuiFonts::BoldItalic));
+			ImGui::Begin("Viewport");
+			ImGui::PopFont();
+
+			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+			auto viewportOffset = ImGui::GetWindowPos();
+
+			m_ViewportSize = ImGui::GetContentRegionAvail();
+
+			auto& sceneFramebuffer = Engine::Get()->GetRenderer()->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer();
+			auto& framebufferSpec = sceneFramebuffer->GetSpecification();
+
+			if (!framebufferSpec.IsSwapchainTarget)
+			{
+				if (s_TextureID != VK_NULL_HANDLE)
+				{
+					ImGui_ImplVulkan_RemoveTexture(s_TextureID);
+					s_TextureID = VK_NULL_HANDLE;
+				}
+
+				s_TextureID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				ImGui::Image(s_TextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
+			}
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				//if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				//{
+				//	const wchar_t* path = (const wchar_t*)payload->Data;
+				//	OpenScene(std::filesystem::path(g_AssetPath) / path);
+				//}
+				ImGui::EndDragDropTarget();
 			}
 
 			ImGui::End();
-
-			EndFrame();
+			ImGui::PopStyleVar();
 		}
+
+		ImGui::End();
+
 	}
 
 	void Editor::BeginFrame()
 	{
+		CORE_PROFILER_FUNC();
+
 		// Start the Dear ImGui frame
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -473,6 +464,8 @@ namespace PAL
 
 	void Editor::EndFrame()
 	{
+		CORE_PROFILER_FUNC();
+
 		auto swapChain = VulkanContext::GetSwapChain();
 
 		// Rendering

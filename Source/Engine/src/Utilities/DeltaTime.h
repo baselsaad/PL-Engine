@@ -5,44 +5,35 @@ namespace PAL
 	class DeltaTime
 	{
 	public:
-		DeltaTime() 
-			: m_FrameTimeIndex(0)
-			, m_TotalFrameTime(0.0f)
-			, m_AverageFrameTime(0.0f)
-		{
-			// Initialize the array with zeros
-			std::fill(std::begin(m_FrameTimeArray), std::end(m_FrameTimeArray), 0.0f);
-		}
-	public:
+		DeltaTime() = default;
+		
 		void Update();
-		void CalculateAverage();
 
-		inline double GetMilliSeconds() const { return m_FrameTime * 1000.0; }
-		inline double GetSeconds() const { return m_FrameTime; }
+		inline float GetDeltaInMilliSeconds() const { return m_DeltaTime.FrameTime * 1000.0; }
+		inline float GetDeltaInSeconds() const { return m_DeltaTime.FrameTime; }
 
-		inline int GetFramePerSeconds() const
-		{
-			return m_FrameTime > 0.0 ? static_cast<int>(1.0f / m_FrameTime) : 0;
-		}
-
-		// Average calculations
-		inline double GetAverageFrameTimeSeconds() const { return m_AverageFrameTime; }
-		inline double GetAverageFrameTimeMili() const { return m_AverageFrameTime * 1000.0; }
-		inline int GetAverageFPS() const
-		{
-			return m_AverageFrameTime > 0.0 ? static_cast<int>(1.0f / m_AverageFrameTime) : 0;
-		}
-
+		inline int GetAverageFPS() const { return m_AvgData.FPS; }
+		inline float GetAvgDeltaTimeInSeconds() const { return m_AvgData.AvgFrameTime; }
+		inline float GetAvgDeltaTimeInMilliSeconds() const { return m_AvgData.AvgFrameTime * 1000.0; }
 	private:
-		double m_FrameTime;                      // Most recent frame time
-		double m_LastFrameTime = 0.0f;           // Time at the last frame
+		
+		struct DeltaTimeData
+		{
+			float FrameTime = 0.0f;		// DeltaTime
+			float LastFrameTime = 0.0f;
+		} m_DeltaTime;
 
-		// Average calculations
-		static const size_t m_MaxSamples = 100;  // Number of frames to average over
-		double m_FrameTimeArray[m_MaxSamples];   // Static array for frame times
-		double m_AverageFrameTime;               // Average frame time
-		size_t m_FrameTimeIndex;                 // Current index in the array
-		double m_TotalFrameTime;                 // Total of all frame times in the array
+		struct AvgData
+		{
+			float LastFrameTime = 0.0f;
+			float AvgFrameTime = 0.0f;
+			double TotalFrameTimeInOneSec = 0.0f;
+
+			int FPS = 0;
+
+			int FrameCount = 0;
+		} m_AvgData;
+
 	};
 
 }

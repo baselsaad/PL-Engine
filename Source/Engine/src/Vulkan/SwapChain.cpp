@@ -366,20 +366,27 @@ namespace PAL
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &m_ImageIndex;
+		VkResult result;
 
-		VkResult result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer || VulkanAPI::s_RecreateSwapChainRequested)
+		// Presenting the actual frame 
 		{
-			RecreateSwapChain();
-
-			// reset
-			VulkanAPI::s_ResizeFrameBuffer = false;
-			VulkanAPI::s_RecreateSwapChainRequested = false;
+			CORE_PROFILER_SCOPE("vkQueuePresentKHR");
+			result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
+			VK_CHECK_RESULT(result);
 		}
-		else if (result != VK_SUCCESS)
+
 		{
-			ASSERT(false, "failed to present swap chain image!");
+			CORE_PROFILER_SCOPE("Check_RecreateSwapChain");
+
+			bool needRecreate = result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer || VulkanAPI::s_RecreateSwapChainRequested;
+			if (needRecreate)
+			{
+				RecreateSwapChain();
+
+				// reset
+				VulkanAPI::s_ResizeFrameBuffer = false;
+				VulkanAPI::s_RecreateSwapChainRequested = false;
+			}
 		}
 
 		currentFrame = (currentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
@@ -387,6 +394,8 @@ namespace PAL
 
 	void VulkanSwapChain::TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
+		CORE_PROFILER_FUNC();
+
 		VkCommandBuffer commandBuffer = m_Device->BeginSingleTimeCommands();
 
 		VkImageMemoryBarrier barrier{};
