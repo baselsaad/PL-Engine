@@ -372,7 +372,7 @@ namespace PAL
 		{
 			CORE_PROFILER_SCOPE("vkQueuePresentKHR");
 			result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
-			VK_CHECK_RESULT(result);
+			CHECK(result == VK_SUCCESS, "Failed to present Image");
 		}
 
 		{

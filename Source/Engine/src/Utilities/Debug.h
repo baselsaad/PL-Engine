@@ -24,6 +24,12 @@
 			DEBUG_BREAK();		\
 		}
 
+#define CHECK(x, Msg)			\
+		if (!(x))				\
+		{						\
+			ASSERT_WARNING(Msg);\
+		}
+
 #define VK_CHECK_RESULT(f)													\
 {																			\
 	VkResult res = (f);														\

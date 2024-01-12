@@ -45,3 +45,4 @@ private:
 };
 
 #define ASSERT_ERROR(...)		Debug::LogError(__VA_ARGS__);
+#define ASSERT_WARNING(...)		Debug::LogWarn(__VA_ARGS__);
