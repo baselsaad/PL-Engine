@@ -26,6 +26,7 @@ namespace PAL
 	public:
 		static uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		static void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const SharedPtr<CommandBuffer>& cmBuffer);
+		static void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 	};
 
 

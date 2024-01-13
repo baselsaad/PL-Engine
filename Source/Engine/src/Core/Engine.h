@@ -2,13 +2,13 @@
 #include "Window.h"
 #include "Event/EventHandler.h"
 #include "Utilities/DeltaTime.h"
+#include "Platform/PlatformEntry.h"
 
 namespace PAL
 {
 	class VulkanAPI;
-	class Renderer;
+	class RuntimeRenderer;
 	class World;
-	class EngineArgs;
 
 	enum class EngineStates
 	{
@@ -32,33 +32,26 @@ namespace PAL
 
 		void SetVSync(bool vsync);
 
+		const SharedPtr<RuntimeRenderer>& GetRuntimeRenderer();
+
 		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
 		inline EventHandler& GetInputHandler() { return m_EventHandler; }
-		inline SharedPtr<Renderer>& GetRenderer() { return m_Renderer; }
-		inline const glm::vec2& GetViewportSize() const { return m_RuntimeViewportSize; };
-
+		const glm::vec2& GetViewportSize();
 	private:
 		virtual void EngineLoop();
 		void OnEvent(Event& e);
 		void OnResizeWindow(const ResizeWindowEvent& event);
-		void OnResizeFrameBuffer(const ResizeFrameBufferEvent& event); // TODO: move later to editor
 		void OnCloseWindow(const CloseWindowEvent& event);
 		void OnKeyPressed(const KeyPressedEvent& event);
 
 	private:
 		static Engine* s_Instance;
 
-		SharedPtr<Renderer> m_Renderer;
-		SharedPtr<World> m_World;
+		EngineApplication* m_App;
 		UniquePtr<Window> m_Window;
-
 		DeltaTime m_DeltaTime;
-		EngineStates m_EngineState;
 		EventHandler m_EventHandler;
 
 		bool m_ShouldClose;
-
-		//TODO: Move to runtimeRenderer Class 
-		glm::vec2 m_RuntimeViewportSize;
 	};
 }

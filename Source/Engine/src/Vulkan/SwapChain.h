@@ -26,21 +26,10 @@ namespace PAL
 		VulkanSwapChain(const SharedPtr<VulkanDevice>& device);
 
 		void Create();
-		void CreateSyncObjects();
-
-		void CreateImageViews();
-		void CleanupSwapChain();
 		void RecreateSwapChain();
-		void PresentFrame(const SharedPtr<CommandBuffer>& commandBuffer);
-		
-		void TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
-
-		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
-		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		void PresentFrame();
 
 		uint32_t AcquireNextImage(const SharedPtr<RenderPass>& renderpass);
-
 		static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 		inline const VkSwapchainKHR GetVkSwapChain() const { return m_SwapChain; }
@@ -51,13 +40,18 @@ namespace PAL
 		inline const std::vector<VkFence>& GetInFlightFence() { return m_InFlightFence; }
 		inline const uint32_t& GetImageIndex() { return m_ImageIndex; }
 
-		inline void BindResizeCallback(CallbackType&& callback) { m_ResizeCallbacks.emplace_back(callback); }
+		inline uint32_t GetCurrentFrame() { return m_CurrentFrame; }
 
-		// @TODO : Fix this
-		//inline void UnBindResizeCallback(const CallbackType& callback)
-		//{
-		//	m_ResizeCallbacks.erase(std::remove(m_ResizeCallbacks.begin(), m_ResizeCallbacks.end(), callback), m_ResizeCallbacks.end());
-		//}
+		inline void BindResizeCallback(CallbackType&& callback) { m_ResizeCallbacks.emplace_back(callback); }
+		// @TODO : UnBindResizeCallback
+	private:
+		void CreateSyncObjects();
+		void CreateImageViews();
+		void CleanupSwapChain();
+
+		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
+		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	private:
 		SharedPtr<VulkanDevice> m_Device;
@@ -75,9 +69,8 @@ namespace PAL
 		std::vector<VkFence> m_InFlightFence;
 
 		uint32_t m_ImageIndex;
+		uint32_t m_CurrentFrame;
 
 		std::vector<CallbackType> m_ResizeCallbacks;
-
-
 	};
 }

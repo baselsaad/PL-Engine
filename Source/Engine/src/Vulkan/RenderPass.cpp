@@ -9,12 +9,12 @@
 namespace PAL
 {
 
-	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, bool isSwapchainTarget)
-		: m_IsSwapchainTarget(isSwapchainTarget)
+	RenderPass::RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, const RenderpassSpecification& renderpassSpec)
+		: m_RenderpassSpec(renderpassSpec)
 	{
 		VkAttachmentDescription attachmentDescription = {};
 		attachmentDescription.flags = 0;
-		attachmentDescription.format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
+		attachmentDescription.format = Engine::Get()->GetWindow()->GetSwapChain()->GetSwapChainImageFormat();
 		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
 		attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; //VK_ATTACHMENT_LOAD_OP_CLEAR or do not clear on load use => VK_ATTACHMENT_LOAD_OP_LOAD;
 		attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -22,9 +22,9 @@ namespace PAL
 		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		if (isSwapchainTarget)
+		if (renderpassSpec.Target == PresentTarget::Swapchain)
 			attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		else
+		else if (renderpassSpec.Target == PresentTarget::CustomViewport)
 			attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkAttachmentReference color_attachment = {};
@@ -63,7 +63,7 @@ namespace PAL
 
 	void RenderPass::Begin(VkCommandBuffer currentCommandBuffer, uint32_t imageIndex)
 	{
-		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -72,7 +72,7 @@ namespace PAL
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
 
-		if (!m_IsSwapchainTarget)
+		if (m_RenderpassSpec.Target == PresentTarget::CustomViewport)
 		{
 			VkExtent2D extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };
 			renderPassInfo.renderArea.extent = extent;

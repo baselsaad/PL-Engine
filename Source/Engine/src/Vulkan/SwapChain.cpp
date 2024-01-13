@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include "RenderPass.h"
 #include "VulkanRenderer.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
 #include "CommandBuffer.h"
 #include "Utilities/Timer.h"
 #include "VulkanFramebuffer.h"
@@ -17,6 +17,7 @@ namespace PAL
 	VulkanSwapChain::VulkanSwapChain(const SharedPtr<VulkanDevice>& device)
 		: m_Device(device)
 		, m_ImageIndex(0)
+		, m_CurrentFrame(0)
 	{
 	}
 
@@ -84,10 +85,14 @@ namespace PAL
 
 		// Retrieving the swap chain images
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, nullptr);
+		ASSERT(imageCount >= VulkanAPI::MAX_FRAMES_IN_FLIGHT, "Your SwapChain does not support "+ std::to_string(VulkanAPI::MAX_FRAMES_IN_FLIGHT) +" FRAMES in Flight");
+
 		m_SwapChainImages.resize(imageCount);
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
 		CreateSyncObjects();
+
+		CreateImageViews();
 	}
 
 	void VulkanSwapChain::CreateSyncObjects()
@@ -106,9 +111,9 @@ namespace PAL
 		// Each Frame has it's own Semaphores and Fences
 		for (size_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); i++)
 		{
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateSemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-			VK_CHECK_RESULT(vkCreateFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(m_Device->GetVkDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateSemaphore(m_Device->GetVkDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
+			VK_CHECK_RESULT(vkCreateFence(m_Device->GetVkDevice(), &fenceInfo, nullptr, &m_InFlightFence[i]));
 		}
 	}
 
@@ -224,7 +229,7 @@ namespace PAL
 	uint32_t VulkanSwapChain::AcquireNextImage(const SharedPtr<RenderPass>& renderpass)
 	{
 		m_ImageIndex = 0;
-		VkResult result = vkAcquireNextImageKHR(m_Device->GetVkDevice(), m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore[VulkanAPI::s_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_Device->GetVkDevice(), m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore[m_CurrentFrame], VK_NULL_HANDLE, &m_ImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -279,9 +284,9 @@ namespace PAL
 		//Delete Semaphores
 		for (size_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); i++)
 		{
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
-			vkDestroyFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_InFlightFence[i], nullptr);
+			vkDestroySemaphore(m_Device->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
+			vkDestroySemaphore(m_Device->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
+			vkDestroyFence(m_Device->GetVkDevice(), m_InFlightFence[i], nullptr);
 		}
 
 	}
@@ -314,9 +319,9 @@ namespace PAL
 		//Delete Semaphores
 		for (size_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); i++)
 		{
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
-			vkDestroySemaphore(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
-			vkDestroyFence(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_InFlightFence[i], nullptr);
+			vkDestroySemaphore(m_Device->GetVkDevice(), m_RenderFinishedSemaphore[i], nullptr);
+			vkDestroySemaphore(m_Device->GetVkDevice(), m_ImageAvailableSemaphore[i], nullptr);
+			vkDestroyFence(m_Device->GetVkDevice(), m_InFlightFence[i], nullptr);
 		}
 
 		Create();
@@ -328,32 +333,31 @@ namespace PAL
 		}
 	}
 
-	void VulkanSwapChain::PresentFrame(const SharedPtr<CommandBuffer>& commandBuffer)
+	void VulkanSwapChain::PresentFrame()
 	{
-		auto& commandBuffers = commandBuffer->GetCommandBuffers();
-		uint32_t& currentFrame = VulkanAPI::s_CurrentFrame; // by ref because we want to increment the value
+		auto commandBuffers = m_Device->GetCurrentCommandBuffer();
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+		submitInfo.pCommandBuffers = &commandBuffers;
 
-		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore[currentFrame] };
+		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore[m_CurrentFrame] };
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 
-		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore[currentFrame] };
+		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore[m_CurrentFrame] };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 	
 		{
 			CORE_PROFILER_SCOPE("GPU Frame");
 
-			VK_CHECK_RESULT(vkQueueSubmit(VulkanContext::GetVulkanDevice()->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[currentFrame])); // execution of the recorded commands
-			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[currentFrame], VK_TRUE, UINT64_MAX)); // wait for GPU to complete
-			VK_CHECK_RESULT(vkResetFences(VulkanContext::GetVulkanDevice()->GetVkDevice(), 1, &m_InFlightFence[currentFrame])); // set Fence to unsignaled state 
+			VK_CHECK_RESULT(vkQueueSubmit(m_Device->GetVkGraphicsQueue(), 1, &submitInfo, m_InFlightFence[m_CurrentFrame])); // execution of the recorded commands
+			VK_CHECK_RESULT(vkWaitForFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[m_CurrentFrame], VK_TRUE, UINT64_MAX)); // wait for GPU to complete
+			VK_CHECK_RESULT(vkResetFences(m_Device->GetVkDevice(), 1, &m_InFlightFence[m_CurrentFrame])); // set Fence to unsignaled state 
 		}
 
 		VkPresentInfoKHR presentInfo{};
@@ -371,7 +375,7 @@ namespace PAL
 		// Presenting the actual frame 
 		{
 			CORE_PROFILER_SCOPE("vkQueuePresentKHR");
-			result = vkQueuePresentKHR(VulkanContext::GetVulkanDevice()->GetVkPresentQueue(), &presentInfo);
+			result = vkQueuePresentKHR(m_Device->GetVkPresentQueue(), &presentInfo);
 			CHECK(result == VK_SUCCESS, "Failed to present Image");
 		}
 
@@ -389,71 +393,10 @@ namespace PAL
 			}
 		}
 
-		currentFrame = (currentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
+		m_CurrentFrame = (m_CurrentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
 	}
 
-	void VulkanSwapChain::TransitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
-	{
-		CORE_PROFILER_FUNC();
-
-		VkCommandBuffer commandBuffer = m_Device->BeginSingleTimeCommands();
-
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = oldLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
-
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
-
-		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-		{
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-		{
-			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-		{
-			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-			sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		}
-		else
-		{
-			ASSERT(false, "unsupported layout transition!");
-		}
-
-		vkCmdPipelineBarrier(
-			commandBuffer,
-			sourceStage, destinationStage,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
-
-		m_Device->EndSingleTimeCommands(commandBuffer);
-	}
+	
 
 
 	

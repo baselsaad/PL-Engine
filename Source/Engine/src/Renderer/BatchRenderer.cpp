@@ -5,7 +5,7 @@
 #include "Vulkan/IndexBuffer.h"
 #include "Vulkan/CommandBuffer.h"
 #include "Vulkan/VulkanContext.h"
-#include "Renderer.h"
+#include "RuntimeRenderer.h"
 #include "Utilities/Timer.h"
 
 namespace PAL
@@ -67,12 +67,12 @@ namespace PAL
 		// reset every thing
 		m_QuadBatchingData.CurrentBatch = 0;
 		m_QuadBatchingData.IndexCount = 0;
-		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[VulkanAPI::GetCurrentFrame()];
+		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[Engine::Get()->GetWindow()->GetCurrentFrame()];
 	}
 
 	void BatchRenderer::End()
 	{
-		int currentFrame = VulkanAPI::GetCurrentFrame();
+		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
 		if (m_QuadBatchingData.CurrentBatch < m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch < size --> we do not use other batches
 		{
@@ -90,17 +90,17 @@ namespace PAL
 			}
 		}
 
-		Renderer::GetStats().VertexBufferCount = m_QuadBatchingData.BatchesArray[currentFrame].size();
+		RuntimeRenderer::GetStats().VertexBufferCount = m_QuadBatchingData.BatchesArray[currentFrame].size();
 	}
 
 	void BatchRenderer::FindOrCreateNewQuadBatch()
 	{
 		CORE_PROFILER_FUNC();
 
-		int currentFrame = VulkanAPI::GetCurrentFrame();
+		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
 		m_QuadBatchingData.IndexCount = 0;
-		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[VulkanAPI::GetCurrentFrame()];
+		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[currentFrame];
 
 		m_QuadBatchingData.CurrentBatch++;
 		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch == size -> we do not have free batches -> create new 
@@ -144,7 +144,7 @@ namespace PAL
 
 	void BatchRenderer::BindCurrentQuadBatch()
 	{
-		int currentFrame = VulkanAPI::GetCurrentFrame();
+		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
 		uint32_t dataSize = (uint32_t)((uint8_t*)m_QuadBatchingData.VertexBufferPtr - (uint8_t*)m_QuadBatchingData.VertexBufferBase[currentFrame]);
 
@@ -156,7 +156,7 @@ namespace PAL
 
 	const SharedPtr<VulkanVertexBuffer>& BatchRenderer::GetVertexBuffer()
 	{
-		int currentFrame = VulkanAPI::GetCurrentFrame();
+		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 		return m_QuadBatchingData.BatchesArray[currentFrame].at(m_QuadBatchingData.CurrentBatch).VertexBuffer;
 	}
 

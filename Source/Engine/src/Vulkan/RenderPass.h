@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanAPI.h"
+#include "Renderer/RenderAPI.h"
 
 namespace PAL
 {
@@ -9,7 +10,7 @@ namespace PAL
 	class RenderPass
 	{
 	public:
-		RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, bool isSwapchainTarget);
+		RenderPass(const SharedPtr<VulkanDevice>& vulkanDevice, const RenderpassSpecification& renderpassSpec);
 
 		void Shutdown();
 
@@ -20,13 +21,12 @@ namespace PAL
 		inline const VkRenderPass GetVkRenderPass() const { return m_RenderPass; }
 
 		inline void SetFrameBuffer(const SharedPtr<VulkanFramebuffer>& framebuffer) { m_Framebuffer = framebuffer; }
-		inline bool IsSwapchainTarget() const { return m_IsSwapchainTarget; }
+		inline const  RenderpassSpecification& GetRenderpassSpec() const { return m_RenderpassSpec; }
 	private:
 		VkRenderPass m_RenderPass;
 
 		SharedPtr<VulkanFramebuffer> m_Framebuffer;
-
-		bool m_IsSwapchainTarget;
+		RenderpassSpecification m_RenderpassSpec;
 	};
 
 }

@@ -4,20 +4,21 @@
 #include "SwapChain.h"
 #include "Event/Event.h"
 #include "Core/Engine.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
+#include "Renderer/RenderAPI.h"
 
 namespace PAL
 {
-	VulkanFramebuffer::VulkanFramebuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkRenderPass renderPass, const FramebufferSpecification& spec)
-		: m_Device(device)
-		, m_PhysicalDevice(physicalDevice)
+	VulkanFramebuffer::VulkanFramebuffer(VkRenderPass renderPass, const FramebufferSpecification& spec)
+		: m_Device(VulkanContext::GetVulkanDevice()->GetVkDevice())
+		, m_PhysicalDevice(VulkanContext::GetVulkanDevice()->GetPhysicalDevice()->GetVkPhysicalDevice())
 		, m_RenderPass(renderPass)
 		, m_Spec(spec)
 	{
 		Resize(spec.Width, spec.Height);
 
-		if (spec.IsSwapchainTarget)
-			VulkanContext::GetSwapChain()->BindResizeCallback(BIND_FUN(this, VulkanFramebuffer::Resize));
+		if (spec.Target == PresentTarget::Swapchain)
+			Engine::Get()->GetWindow()->GetSwapChain()->BindResizeCallback(BIND_FUN(this, VulkanFramebuffer::Resize));
 	}
 
 	VulkanFramebuffer::~VulkanFramebuffer()
@@ -32,7 +33,7 @@ namespace PAL
 		{
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
 
-			if (!m_Spec.IsSwapchainTarget)
+			if (m_Spec.Target == PresentTarget::CustomViewport)
 			{
 				allocator.DestroyImage(m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
 				vkDestroyImageView(m_Device, m_FramebufferImages[i].ColorImageView, nullptr);
@@ -43,12 +44,12 @@ namespace PAL
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
 	{
-		VulkanMemoryAllocator allocator("FrameBuffer Image");
+		VulkanMemoryAllocator allocator(m_Spec.DebugName + "FrameBuffer Image");
 		for (int i = 0; i < m_Framebuffers.size(); i++)
 		{
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
 
-			if (!m_Spec.IsSwapchainTarget)
+			if (m_Spec.Target == PresentTarget::CustomViewport)
 			{
 				vkDestroyImageView(m_Device, m_FramebufferImages[i].ColorImageView, nullptr);
 				allocator.DestroyImage(m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
@@ -58,12 +59,12 @@ namespace PAL
 
 		m_Spec.Width = width;
 		m_Spec.Height = height;
-		auto& swapChain = VulkanContext::GetSwapChain();
+		auto& swapChain = Engine::Get()->GetWindow()->GetSwapChain();
 
-		m_FramebufferImages.resize(m_Spec.BufferCount);
-		m_ImageAllocations.resize(m_Spec.BufferCount);
+		m_FramebufferImages.resize(VulkanAPI::GetMaxFramesInFlight());
+		m_ImageAllocations.resize(VulkanAPI::GetMaxFramesInFlight());
 
-		if (m_Spec.IsSwapchainTarget)
+		if (m_Spec.Target == PresentTarget::Swapchain)
 		{
 			for (int i = 0; i < swapChain->GetSwapChainImageViews().size(); i++)
 			{
@@ -81,8 +82,8 @@ namespace PAL
 			}
 		}
 
-		m_Framebuffers.resize(m_Spec.BufferCount);
-		for (uint32_t i = 0; i < m_Spec.BufferCount; ++i)
+		m_Framebuffers.resize(VulkanAPI::GetMaxFramesInFlight());
+		for (uint32_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
 		{
 			CreateFramebuffer(i);
 		}
@@ -114,9 +115,9 @@ namespace PAL
 
 	void VulkanFramebuffer::CreateColorResources()
 	{
-		auto format = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
+		auto format = Engine::Get()->GetWindow()->GetSwapChain()->GetSwapChainImageFormat();
 
-		for (uint32_t i = 0; i < m_Spec.BufferCount; ++i)
+		for (uint32_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
 		{
 			CreateImage(m_Spec.Width, m_Spec.Height, m_Spec.ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 						m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);

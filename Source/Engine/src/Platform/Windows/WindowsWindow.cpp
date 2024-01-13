@@ -42,9 +42,18 @@ namespace PAL
 	{
 	}
 
-	void WindowsWindow::SwapBuffers()
+	void WindowsWindow::InitContext()
+	{
+		// it is ok to use vulkan-releated classes here since this class is only for windows Window
+		VulkanContext::Init(m_WindowHandle);
+		m_SwapChain = NewShared<VulkanSwapChain>(VulkanContext::GetVulkanDevice());
+		m_SwapChain->Create();
+	}
+
+	void WindowsWindow::Present()
 	{
 		/* Swap front and back buffers */
+		m_SwapChain->PresentFrame();
 	}
 
 	void WindowsWindow::PollEvents()
@@ -108,6 +117,11 @@ namespace PAL
 	bool WindowsWindow::ShouldClose()
 	{
 		return glfwWindowShouldClose(m_WindowHandle);
+	}
+
+	const SharedPtr<VulkanSwapChain>& WindowsWindow::GetSwapChain() const
+	{
+		return m_SwapChain;
 	}
 
 	void WindowsWindow::SetupEventCallback(EventFunc&& callback)

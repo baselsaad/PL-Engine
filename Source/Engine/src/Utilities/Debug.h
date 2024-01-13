@@ -18,12 +18,6 @@
 			DEBUG_BREAK();		\
 		}
 
-#define ASSERT(x)				\
-		if (!(x))				\
-		{						\
-			DEBUG_BREAK();		\
-		}
-
 #define CHECK(x, Msg)			\
 		if (!(x))				\
 		{						\
@@ -41,6 +35,7 @@
 }
 #else
 #define ASSERT(x,MSG)
+#define CHECK(x, Msg)
 #define VK_CHECK_RESULT(f)	(f)
 #endif
 

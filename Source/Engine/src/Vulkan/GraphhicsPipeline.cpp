@@ -95,7 +95,7 @@ namespace PAL
 		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 
-		if (!renderpass->IsSwapchainTarget())
+		if (renderpass->GetRenderpassSpec().Target == PresentTarget::CustomViewport)
 		{
 			colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -148,7 +148,7 @@ namespace PAL
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(VulkanContext::GetVulkanDevice()->GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline));
-		
+
 		vkDestroyShaderModule(VulkanContext::GetVulkanDevice()->GetVkDevice(), fragShaderModule, nullptr);
 		vkDestroyShaderModule(VulkanContext::GetVulkanDevice()->GetVkDevice(), vertShaderModule, nullptr);
 	}

@@ -1,14 +1,12 @@
 #include "pch.h"
 #include "World.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
 #include "Utilities/Colors.h"
 #include "Entity.h"
 #include "Renderer/OrthographicCamera.h"
 #include "Core/Engine.h"
 #include "ECS.h"
 #include "Utilities/Timer.h"
-#include "../../Editor/src/Editor.h"
-
 
 namespace PAL
 {
@@ -82,16 +80,14 @@ namespace PAL
 		{
 			m_ActiveCamera->SetAspectRatio(aspectRatio);
 		}
-		
 		m_ActiveCamera->OnUpdate(deltaTime);
 
-		// @TODO: Move to Runtime renderer 
-		Engine::Get()->GetRenderer()->SetProjection(m_ActiveCamera->GetModellViewProjection());
+		Engine::Get()->GetRuntimeRenderer()->SetProjection(m_ActiveCamera->GetModellViewProjection());
 
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
 		for (auto [entity, transform, renderComponent] : view.each())
 		{
-			Engine::Get()->GetRenderer()->DrawQuad(transform, renderComponent.GetColor());
+			Engine::Get()->GetRuntimeRenderer()->DrawQuad(transform, renderComponent.GetColor());
 		}
 	}
 

@@ -10,7 +10,7 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanRenderer.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
 #include "Utilities/Colors.h"
 #include "Event/Input.h"
 #include "Utilities/DeltaTime.h"
@@ -22,12 +22,7 @@
 #include "Map/World.h"
 #include "Event/Event.h"
 #include "Platform/PlatformEntry.h"
-
-// Testing
-#include "Vulkan/CommandBuffer.h"
 #include "Utilities/Debug.h"
-#include "../../Editor/src/Editor.h"
-#include "Vulkan/VulkanFramebuffer.h"
 
 namespace PAL
 {
@@ -35,20 +30,17 @@ namespace PAL
 
 	Engine::Engine(const EngineArgs& engineArgs)
 		: m_ShouldClose(false)
-		, m_EngineState(EngineStates::UpdateAndRender)
+		, m_App(engineArgs.CurrentApp)
 	{
 		CORE_PROFILER_FUNC();
 
 		s_Instance = this;
 
 		m_Window = NewUnique<WindowsWindow>(engineArgs.EngineWindowData);
+		m_Window->InitContext();
 		m_Window->SetupEventCallback(BIND_FUN(this, Engine::OnEvent));
 
-		m_Renderer = NewShared<Renderer>();
-		m_Renderer->Init(RenderAPITarget::Vulkan);
-
-		// init editor
-		Editor::GetInstance();
+		m_App->Init();
 	}
 
 	void Engine::Run()
@@ -60,9 +52,6 @@ namespace PAL
 		m_EventHandler.BindAction(EventType::CloseWindow, this, &Engine::OnCloseWindow);
 		m_EventHandler.BindAction(EventType::KeyPressed, this, &Engine::OnKeyPressed);
 
-		m_World = NewShared<World>(); // default map for now 
-		m_World->BeginPlay(); //TODO: move later, should be called from editor when press play 
-
 		EngineLoop();
 	}
 
@@ -70,10 +59,9 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		m_Renderer->WaitForIdle();
-		Editor::GetInstance().Shutdown();
+		m_App->OnShutdown();
+		delete m_App;
 
-		m_Renderer->Shutdown();
 		m_Window->Close();
 	}
 
@@ -86,71 +74,51 @@ namespace PAL
 	{
 		if (m_Window->IsVsyncOn() != vsync)
 		{
-			m_Renderer->SetVSync(vsync);
+			m_App->GetRuntimeRenderer()->SetVSync(vsync);
 			m_Window->SetVsync(vsync);
 		}
 	}
 
+	const SharedPtr<RuntimeRenderer>& Engine::GetRuntimeRenderer()
+	{
+		return m_App->GetRuntimeRenderer();
+	}
+
+	const glm::vec2& Engine::GetViewportSize()
+	{
+		return m_App->GetViewportSize();
+	}
+
 	void Engine::EngineLoop()
 	{
+		// should: tick the 
+		// 1- m_DeltaTime
+		// 2-window(PollEvents)
+		// 3-App(Editor, Runtime, etc)
+		// 4-timerManager(like ue)
+		// 5-plugins -> PresentFrame 
+
 		while (!m_ShouldClose)
 		{
 			CORE_PROFILER_FRAME("CPU-Frame");
 
 			m_DeltaTime.Update();
-			Renderer::GetStats().FrameTime = m_DeltaTime.GetAvgDeltaTimeInSeconds();
-			Renderer::GetStats().FrameTime_ms = m_DeltaTime.GetAvgDeltaTimeInMilliSeconds();
-			Renderer::GetStats().FramesPerSecond = m_DeltaTime.GetAverageFPS();
+
+			RuntimeRenderer::GetStats().Reset();
+			RuntimeRenderer::GetStats().FrameTime = m_DeltaTime.GetAvgDeltaTimeInSeconds();
+			RuntimeRenderer::GetStats().FrameTime_ms = m_DeltaTime.GetAvgDeltaTimeInMilliSeconds();
+			RuntimeRenderer::GetStats().FramesPerSecond = m_DeltaTime.GetAverageFPS();
 
 			m_Window->PollEvents();
 
-			// Move to Scene/Runtime Renderer
-			if (!m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetSpecification().IsSwapchainTarget)
-			{
-				m_RuntimeViewportSize = { Editor::GetInstance().GetViewportSize().x , Editor::GetInstance().GetViewportSize().y };
-				m_Renderer->ResizeFrameBuffer(false, (uint32_t)m_RuntimeViewportSize.x, (uint32_t)m_RuntimeViewportSize.y);
-			}
-			else
-			{
-				m_RuntimeViewportSize = { m_Window->GetWindowWidth() , m_Window->GetWindowHeight() };
-			}
+			// Let the App start and end the frame 
+			m_App->OnUpdate(m_DeltaTime.GetDeltaInSeconds());
 
-			// Start recording main command buffer
-			m_Renderer->StartFrame();
+			// Tick TimerManager
 
-			switch (m_EngineState)
-			{
-				case EngineStates::Render:
-				{
-					m_World->OnRender(m_DeltaTime.GetDeltaInSeconds());
-					break;
-				}
-				case EngineStates::UpdateAndRender:
-				{
-					m_World->OnUpdate(m_DeltaTime.GetDeltaInSeconds());
-					m_World->OnRender(m_DeltaTime.GetDeltaInSeconds());
-					break;
-				}
-				case EngineStates::Idle:
-				{
-					break;
-				}
-			}
+			// Tick Plugins etc.. 
 
-
-			// Render the world
-			m_Renderer->FlushDrawCommands();
-
-			// Render ImGui on top of everything
-			Editor::GetInstance().BeginFrame();
-			Editor::GetInstance().OnRenderImGui(m_Renderer->GetRenderAPI().As<VulkanAPI>()->GetSceneFrameBuffer()->GetFrameBufferImage());
-			Editor::GetInstance().EndFrame();
-
-			// End recording main command buffer
-			m_Renderer->EndFrame();
-
-			// Submit main command buffer and present image to swapchain
-			m_Renderer->PresentFrame();
+			m_Window->Present();
 		}
 	}
 
@@ -166,13 +134,6 @@ namespace PAL
 		m_Window->OnResize(event.GetWidth(), event.GetHeight());
 	}
 
-	void Engine::OnResizeFrameBuffer(const ResizeFrameBufferEvent& event)
-	{
-		//Debug::Log("Resize Framebuffer: {}, {}", event.GetWidth(), event.GetHeight());
-
-		m_Renderer->ResizeFrameBuffer(true, event.GetWidth(), event.GetHeight());
-	}
-
 	void Engine::OnCloseWindow(const CloseWindowEvent& event)
 	{
 		m_ShouldClose = true;
@@ -180,7 +141,7 @@ namespace PAL
 
 	void Engine::OnKeyPressed(const KeyPressedEvent& event)
 	{
-		if (event.GetPressedKey() == KeyCode::Escape)
+		if (event.GetPressedKey() == KeyCode::F11)
 		{
 			if (m_Window->GetWindowMode() == WindowMode::FullScreen)
 				m_Window->SetScreenMode(WindowMode::Windowed);

@@ -16,8 +16,6 @@ namespace PAL
 		: m_Size(size)
 	{
 		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
-		VkCommandBuffer copyCmd = cmBuffer->GetCommandBuffers()[VulkanAPI::GetCurrentFrame()];
-
 		VulkanMemoryAllocator allocator("IndexBuffer");
 
 		VkBufferCreateInfo bufferCreateInfo{};

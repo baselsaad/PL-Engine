@@ -1,6 +1,9 @@
 #pragma once
 #include "VulkanAPI.h"
 #include "VulkanRenderer.h"
+#include "Core/Engine.h"
+#include "Core/Window.h"
+
 
 namespace PAL
 {
@@ -22,7 +25,7 @@ namespace PAL
 
 		VkCommandBuffer CreateSecondaryCommandBuffer() const;
 		inline const std::vector<VkCommandBuffer>& GetCommandBuffers() const { return m_CommandBuffers; }
-		inline VkCommandBuffer GetCurrentCommandBuffer() const { return m_CommandBuffers[VulkanAPI::GetCurrentFrame()]; }
+		inline VkCommandBuffer GetCurrentCommandBuffer() const { return m_CommandBuffers[Engine::Get()->GetWindow()->GetCurrentFrame()]; }
 		inline  VkCommandPool GetCommandPool() { return m_CommandPool; }
 
 	private:

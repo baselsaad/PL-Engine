@@ -6,18 +6,7 @@
 
 namespace PAL
 {
-	struct FramebufferSpecification
-	{
-		VkFormat ColorFormat;
-		VkFormat DepthFormat;
-		uint32_t Width;
-		uint32_t Height;
-		bool UseDepth;
-		bool IsSwapchainTarget; // Indicates if the framebuffer is for swapchain images
-		uint32_t BufferCount; // Number of frame buffers to create
-
-		std::string DebugName;
-	};
+	struct FramebufferSpecification;
 
 	struct VulkanImage
 	{
@@ -30,7 +19,7 @@ namespace PAL
 	class VulkanFramebuffer
 	{
 	public:
-		VulkanFramebuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkRenderPass renderPass, const FramebufferSpecification& spec);
+		VulkanFramebuffer(VkRenderPass renderPass, const FramebufferSpecification& spec);
 		virtual ~VulkanFramebuffer();
 
 		void Resize(uint32_t width, uint32_t height);
@@ -39,7 +28,11 @@ namespace PAL
 		inline VkFramebuffer GetFramebuffer(uint32_t index) const { return m_Framebuffers[index]; };
 
 		inline VulkanImage* GetFrameBufferImage(uint32_t index) { return &m_FramebufferImages[index]; }
-		inline VulkanImage* GetFrameBufferImage() { return &m_FramebufferImages[VulkanContext::GetSwapChain()->GetImageIndex()]; }
+		
+		inline VulkanImage* GetFrameBufferImage() 
+		{ 
+			return &m_FramebufferImages[Engine::Get()->GetWindow()->GetSwapChain()->GetImageIndex()];
+		}
 
 		inline VkImageView GetDepthImageView() const { return m_DepthImageView; }
 		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
@@ -62,6 +55,7 @@ namespace PAL
 	private:
 		VkDevice m_Device;
 		VkPhysicalDevice m_PhysicalDevice;
+
 		FramebufferSpecification m_Spec;
 
 		std::vector<VulkanImage> m_FramebufferImages;

@@ -6,7 +6,7 @@ namespace PAL
 {
 	class Camera;
 	class Entity;
-	class Renderer;
+	class RuntimeRenderer;
 
 	class World
 	{

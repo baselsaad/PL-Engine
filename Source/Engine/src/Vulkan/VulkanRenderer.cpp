@@ -11,55 +11,37 @@
 
 #include "Core/Engine.h"
 #include "Core/Window.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Utilities/Timer.h"
-#include "../../Editor/src/Editor.h"
 #include "VulkanFramebuffer.h"
 
 namespace PAL
 {
-	uint32_t VulkanAPI::s_CurrentFrame = 0;
 	bool VulkanAPI::s_ResizeFrameBuffer = false;
 	bool VulkanAPI::s_RecreateSwapChainRequested = false;
 
-	void VulkanAPI::Init()
+	void VulkanAPI::Init(const RenderApiSpec& spec)
 	{
-		VulkanContext::Init();
-		VulkanContext::CreateVulkanSwapChain();
-		m_Device = VulkanContext::GetVulkanDevice();
+		m_ApiSpec = spec;
 
+		m_Device = VulkanContext::GetVulkanDevice();
 		VulkanMemoryAllocator::Init(VulkanContext::GetVulkanDevice());
 
-		bool isSwapChainTarget = false;
-		m_RenderPass = NewShared<RenderPass>(VulkanContext::GetVulkanDevice(), isSwapChainTarget);
+		m_MainRenderPass = NewShared<RenderPass>(m_Device, spec.MainRenderpassSpec);
+		m_MainFrameBuffer = NewShared<VulkanFramebuffer>(m_MainRenderPass->GetVkRenderPass(), spec.MainFrameBufferSpec);
+		m_MainRenderPass->SetFrameBuffer(m_MainFrameBuffer);
 
-		// @TODO: Move To SceneRenderer/Runtime Renderer
-		FramebufferSpecification sceneSpec = {};
-		sceneSpec.BufferCount = VulkanContext::GetSwapChain()->GetSwapChainImages().size();
-		sceneSpec.ColorFormat = VulkanContext::GetSwapChain()->GetSwapChainImageFormat();
-		sceneSpec.DepthFormat = VK_FORMAT_UNDEFINED;
-		sceneSpec.Width = 1600;
-		sceneSpec.Height = 900;
-		sceneSpec.UseDepth = false;
-		sceneSpec.IsSwapchainTarget = isSwapChainTarget;
-		sceneSpec.DebugName = "Scene Framebuffer";
-
-		m_SceneFrameBuffer = NewShared<VulkanFramebuffer>(VulkanContext::GetVulkanDevice()->GetVkDevice(),
-			m_Device->GetPhysicalDevice()->GetVkPhysicalDevice(), m_RenderPass->GetVkRenderPass(), sceneSpec);
-
-		m_RenderPass->SetFrameBuffer(m_SceneFrameBuffer);
-
-		m_Pipline = NewShared<PipeLine>(m_RenderPass);
+		m_Pipline = NewShared<PipeLine>(m_MainRenderPass);
 	}
 
 	void VulkanAPI::Shutdown()
 	{
 		m_Pipline->Shutdown();
-		m_RenderPass->Shutdown();
-		m_SceneFrameBuffer->Shutdown();
+		m_MainRenderPass->Shutdown();
+		m_MainFrameBuffer->Shutdown();
 
 		VulkanMemoryAllocator::Shutdown();
 		VulkanContext::Shutdown();
@@ -74,10 +56,10 @@ namespace PAL
 	{
 		s_ResizeFrameBuffer = resize;
 
-		if (width > 0 && height > 0 && width != m_SceneFrameBuffer->GetSpecification().Width
-			&& height != m_SceneFrameBuffer->GetSpecification().Height)
+		if ((width > 0 && height > 0) && 
+			(width != m_MainFrameBuffer->GetSpecification().Width || height != m_MainFrameBuffer->GetSpecification().Height))
 		{
-			m_SceneFrameBuffer->Resize(width, height);
+			m_MainFrameBuffer->Resize(width, height);
 		}
 	}
 
@@ -86,23 +68,23 @@ namespace PAL
 		m_DrawCommands.push_back(command);
 	}
 
-	void VulkanAPI::PresentFrame()
-	{
-		VulkanContext::GetSwapChain()->PresentFrame(m_Device->GetMainCommandBuffer());
-	}
-
 	void VulkanAPI::SetVSync(bool vsync)
 	{
 		s_RecreateSwapChainRequested = true;
 	}
 
+	void* VulkanAPI::GetFinalImage(uint32_t index)
+	{
+		return m_MainFrameBuffer->GetFrameBufferImage(index);
+	}
+
 	void VulkanAPI::BeginFrame()
 	{
-		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		// TODO: Move later
 		{
-			VulkanContext::GetSwapChain()->AcquireNextImage(m_RenderPass);
+			Engine::Get()->GetWindow()->GetSwapChain()->AcquireNextImage(m_MainRenderPass);
 			vkResetCommandBuffer(m_Device->GetCurrentCommandBuffer(), /*VkCommandBufferResetFlagBits*/ 0);
 		}
 
@@ -111,11 +93,13 @@ namespace PAL
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(m_Device->GetCurrentCommandBuffer(), &beginInfo));
 
-		// @TODO: Move to SceneRenderer
-		if (!m_SceneFrameBuffer->GetSpecification().IsSwapchainTarget && m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		if (m_ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport
+			&& m_MainFrameBuffer->GetFrameBufferImage()->ImageLayout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
-			VulkanContext::GetSwapChain()->TransitionImageLayout(m_SceneFrameBuffer->GetFrameBufferImage()->ColorImage, m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			m_SceneFrameBuffer->GetFrameBufferImage()->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // ready for rendering
+			VulkanUtilities::TransitionImageLayout(m_MainFrameBuffer->GetFrameBufferImage()->ColorImage, m_MainFrameBuffer->GetFrameBufferImage()->ImageLayout,
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+			m_MainFrameBuffer->GetFrameBufferImage()->ImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		}
 	}
 
@@ -126,7 +110,7 @@ namespace PAL
 
 	void VulkanAPI::FlushDrawCommands()
 	{
-		const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		vkCmdBindPipeline(m_Device->GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipline->GetGraphicsPipeline());
 
@@ -144,7 +128,7 @@ namespace PAL
 		scissor.extent = swapchain->GetSwapChainExtent();
 		vkCmdSetScissor(m_Device->GetCurrentCommandBuffer(), 0, 1, &scissor);
 
-		m_RenderPass->Begin(m_Device->GetCurrentCommandBuffer(), swapchain->GetImageIndex());
+		m_MainRenderPass->Begin(m_Device->GetCurrentCommandBuffer(), swapchain->GetImageIndex());
 		{
 			// Execute Draw Commands
 			for (auto& func : m_DrawCommands)
@@ -155,17 +139,17 @@ namespace PAL
 				}
 			}
 
-			Renderer::GetStats().DrawCalls = m_DrawCommands.size();
+			RuntimeRenderer::GetStats().DrawCalls = m_DrawCommands.size();
 			m_DrawCommands.clear();
 		}
-		m_RenderPass->End(m_Device->GetCurrentCommandBuffer());
+		m_MainRenderPass->End(m_Device->GetCurrentCommandBuffer());
 	}
 
 	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
 		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
 		{
-			const SharedPtr<VulkanSwapChain>& swapchain = VulkanContext::GetSwapChain();
+			const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 			// Bind VertexBuffer
 			VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };

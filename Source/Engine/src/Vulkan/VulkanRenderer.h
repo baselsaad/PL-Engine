@@ -12,10 +12,11 @@ namespace PAL
 	class VulkanIndexBuffer;
 	class VulkanFramebuffer;
 
+
 	class VulkanAPI : public IRenderAPI
 	{
 	public:
-		virtual void Init() override;
+		virtual void Init(const RenderApiSpec& spec) override;
 		virtual void Shutdown() override;
 
 		virtual void BeginFrame() override;
@@ -28,27 +29,23 @@ namespace PAL
 		virtual void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0) override;
 
 		virtual void RecordDrawCommand(const std::function<void()>& drawCommand);
-		virtual void PresentFrame() override;
 		virtual void SetVSync(bool vsync) override;
+		virtual void* GetFinalImage(uint32_t index = 0) override;
 
 		inline static constexpr int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
-		inline static uint32_t GetCurrentFrame() { return s_CurrentFrame; }
-		inline const SharedPtr<RenderPass>& GetRenderPass() { return m_RenderPass; }
+		inline const SharedPtr<RenderPass>& GetRenderPass() { return m_MainRenderPass; }
 		inline const SharedPtr<PipeLine> GetGraphicsPipline() { return m_Pipline; }
-
-		// Remove Later
-		inline const SharedPtr<VulkanFramebuffer>& GetSceneFrameBuffer() { return m_SceneFrameBuffer; }
-
 	private:
-		SharedPtr<RenderPass> m_RenderPass;
-		SharedPtr<PipeLine> m_Pipline;
-		SharedPtr<VulkanFramebuffer> m_SceneFrameBuffer;
-		std::vector <std::function<void()>> m_DrawCommands;
+		RenderApiSpec m_ApiSpec;
 
 		SharedPtr<VulkanDevice> m_Device;
+		SharedPtr<RenderPass> m_MainRenderPass;
+		SharedPtr<VulkanFramebuffer> m_MainFrameBuffer;
+		SharedPtr<PipeLine> m_Pipline;
 
-		static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-		static uint32_t s_CurrentFrame;
+		std::vector <std::function<void()>> m_DrawCommands;
+
+		static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 		static bool s_ResizeFrameBuffer;
 		static bool s_RecreateSwapChainRequested;
 

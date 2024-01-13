@@ -1,10 +1,12 @@
 #pragma once
 #include "imgui.h"
+#include "Platform/PlatformEntry.h"
 
 namespace PAL
 {
 	struct VulkanImage;
 	class Image2D;
+	class VulkanSwapChain;
 
 	enum class ImGuiFonts
 	{
@@ -16,30 +18,38 @@ namespace PAL
 		LightItalic,
 	};
 
-	class Editor
+	class Editor : public EngineApplication
 	{
 	public:
-		static Editor& GetInstance();
-
 		Editor();
 		~Editor();
-		void Shutdown();
 
-		void CreateRenderPass();
+		void Init() override;
+		void OnUpdate(float deltaTime) override;
+		void OnShutdown() override;
+		
+		void SetupVulkan();
 
-		void SetDarkThemeColors();
-		void OnRenderImGui(VulkanImage* image);
+		void InitImGui();
+
+		void SetStyleLight();
+		void SetStyleDark();
 		
 		void BeginFrame();
+		void OnRenderImGui(VulkanImage* image);
 		void EndFrame();
 
-		inline const ImVec2& GetViewportSize() const { return m_ViewportSize; }
 		inline ImFont* GetFont(ImGuiFonts font = ImGuiFonts::Regular) { return m_ImGuiFonts[font]; }
+	
 	private:
-		VkRenderPass m_ImGuiRenderPass;
-		// @TODO : Move this to a SceneRenderer class
-		ImVec2 m_ViewportSize;
-
 		std::map<ImGuiFonts, ImFont*> m_ImGuiFonts;
+
+		// Move Later
+		VkRenderPass m_ImGuiRenderPass = VK_NULL_HANDLE;
+		VkDescriptorSet m_MainViewportTexID = VK_NULL_HANDLE;
+		SharedPtr<VulkanSwapChain> m_Swapchain; // use weakptr
 	};
 }
+
+
+

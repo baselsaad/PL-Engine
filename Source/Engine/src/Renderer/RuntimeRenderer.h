@@ -14,6 +14,14 @@ namespace PAL
 		Vulkan, Unknown
 	};
 
+	struct RuntimeRendererSpecification
+	{
+		RenderAPITarget TargetAPI = RenderAPITarget::Vulkan;
+		RenderApiSpec ApiSpec = {};
+
+		glm::vec2 ViewportSize;
+	};
+
 	struct RenderStats
 	{
 		int Quads = 0;
@@ -24,17 +32,23 @@ namespace PAL
 		float FrameTime_ms = 0.0f;
 		uint32_t FramesPerSecond = 0;
 
+	private:
 		void Reset()
 		{
 			Quads = 0;
 			DrawCalls = 0;
 		}
+
+		friend class Engine;
+		friend class RuntimeRenderer;
+		friend class Editor;
 	};
 
-	class Renderer
+
+	class RuntimeRenderer
 	{
 	public:
-		void Init(RenderAPITarget target);
+		void Init(const RuntimeRendererSpecification& spec);
 		void Shutdown();
 
 		void StartFrame();
@@ -49,12 +63,14 @@ namespace PAL
 		void RecordDrawCommand(const std::function<void()>& command);
 		void WaitForIdle();
 		void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0);
+		void* GetFinalImage(uint32_t index = 0);
 
-		void PresentFrame();
 		void SetVSync(bool vsync);
 
 		static RenderStats& GetStats() { return s_RenderStats; }
 		inline SharedPtr<IRenderAPI>& GetRenderAPI() { return m_RenderAPI; }
+
+		inline const RuntimeRendererSpecification& GetRuntimeRendererSpec () const { return m_RuntimeRendererSpecification; }
 	
 	private:
 		void Flush();
@@ -64,6 +80,8 @@ namespace PAL
 
 		SharedPtr<IRenderAPI> m_RenderAPI;
 		BatchRenderer* m_BatchRenderer;
+
+		RuntimeRendererSpecification m_RuntimeRendererSpecification;
 
 		// remove later
 		glm::mat4 m_Projection; 

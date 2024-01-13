@@ -10,16 +10,14 @@ namespace PAL
 	class VulkanContext
 	{
 	public:
-		static void Init();
-		static void CreateSurface();
-		static void CreateVulkanSwapChain();
+		static void Init(void* windowHandle);
+		static void CreateSurface(void* windowHandle);
 		static void Shutdown();
 
 		inline static VkInstance GetVulkanInstance() { return s_VulkanInstance; }
 		inline static VkSurfaceKHR GetSurface() { return s_Surface; }
 
 		inline static const SharedPtr<VulkanDevice>& GetVulkanDevice() { return s_VulkanDevice; }
-		inline static SharedPtr<VulkanSwapChain>& GetSwapChain() { return s_SwapChain; };
 
 	private:
 		static std::vector<const char*> GetRequiredExtensions();
@@ -35,7 +33,6 @@ namespace PAL
 
 		static SharedPtr<VulkanDevice> s_VulkanDevice;
 		static SharedPtr<VulkanPhysicalDevice> s_VulkanPhysicalDevice;
-		static SharedPtr<VulkanSwapChain> s_SwapChain;
 	};
 
 }

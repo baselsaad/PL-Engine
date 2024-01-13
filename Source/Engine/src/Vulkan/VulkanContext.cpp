@@ -29,11 +29,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 		Debug::LogError("validation layer: {0}\n", pCallbackData->pMessage);
-		//ASSERT(false);
+		//ASSERT(false, "");
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
 		Debug::Critical("validation layer: {0}\n", pCallbackData->pMessage);
-		ASSERT(false);
+		ASSERT(false, "");
 		break;
 		default:
 		break;
@@ -76,14 +76,13 @@ namespace PAL
 
 	SharedPtr<VulkanDevice> VulkanContext::s_VulkanDevice;
 	SharedPtr<VulkanPhysicalDevice> VulkanContext::s_VulkanPhysicalDevice;
-	SharedPtr<VulkanSwapChain> VulkanContext::s_SwapChain;
 
 	static const std::vector<const char*> s_ValidationLayers =
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
 
-	void VulkanContext::Init()
+	void VulkanContext::Init(void* windowHandle)
 	{
 		ASSERT(CheckValidationLayerSupport(), "validation layers requested, but not available!");
 
@@ -118,7 +117,7 @@ namespace PAL
 		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &s_VulkanInstance));
 		SetupDebugMessenger();
 
-		CreateSurface();
+		CreateSurface(windowHandle);
 
 		s_VulkanPhysicalDevice = NewShared<VulkanPhysicalDevice>();
 		s_VulkanDevice = NewShared<VulkanDevice>(s_VulkanPhysicalDevice);
@@ -131,10 +130,7 @@ namespace PAL
 
 	void VulkanContext::Shutdown()
 	{
-
-		s_SwapChain->CleanupSwapChain();
 		vkDestroySurfaceKHR(s_VulkanInstance, s_Surface, nullptr);
-
 		s_VulkanDevice->Shutdown();
 
 	#if DEBUG
@@ -156,16 +152,9 @@ namespace PAL
 		VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(s_VulkanInstance, &createInfo, nullptr, &s_DebugMessenger));
 	}
 
-	void VulkanContext::CreateSurface()
+	void VulkanContext::CreateSurface(void* windowHandle)
 	{
-		VK_CHECK_RESULT(glfwCreateWindowSurface(s_VulkanInstance, Engine::Get()->GetWindow()->GetWindowHandle(), nullptr, &s_Surface));
-	}
-
-	void VulkanContext::CreateVulkanSwapChain()
-	{
-		s_SwapChain = NewShared<VulkanSwapChain>(s_VulkanDevice);
-		s_SwapChain->Create();
-		s_SwapChain->CreateImageViews();
+		VK_CHECK_RESULT(glfwCreateWindowSurface(s_VulkanInstance, (GLFWwindow*)windowHandle, nullptr, &s_Surface));
 	}
 
 	void VulkanContext::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Renderer.h"
+#include "RuntimeRenderer.h"
 
 #include "RenderAPI.h"
 #include "Vulkan/VulkanRenderer.h"
@@ -13,13 +13,15 @@
 
 namespace PAL
 {
-	PAL::RenderStats Renderer::s_RenderStats;
+	PAL::RenderStats RuntimeRenderer::s_RenderStats;
 
-	void Renderer::Init(RenderAPITarget target)
+	void RuntimeRenderer::Init(const RuntimeRendererSpecification& spec)
 	{
 		CORE_PROFILER_FUNC();
 
-		switch (target)
+		m_RuntimeRendererSpecification = spec;
+
+		switch (spec.TargetAPI)
 		{
 			case PAL::RenderAPITarget::Vulkan:	m_RenderAPI = NewShared<VulkanAPI>();		break;
 			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
@@ -27,11 +29,11 @@ namespace PAL
 			default:							ASSERT(false, "");							break;
 		}
 
-		m_RenderAPI->Init();
+		m_RenderAPI->Init(spec.ApiSpec);
 		m_BatchRenderer = new BatchRenderer(VulkanContext::GetVulkanDevice()->GetMainCommandBuffer());
 	}
 
-	void Renderer::Shutdown()
+	void RuntimeRenderer::Shutdown()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -41,7 +43,7 @@ namespace PAL
 		m_RenderAPI->Shutdown();
 	}
 
-	void Renderer::StartFrame()
+	void RuntimeRenderer::StartFrame()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -51,7 +53,7 @@ namespace PAL
 		m_BatchRenderer->Begin();
 	}
 
-	void Renderer::Flush()
+	void RuntimeRenderer::Flush()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -60,7 +62,7 @@ namespace PAL
 		m_RenderAPI->DrawQuad(m_BatchRenderer->GetVertexBuffer(), m_BatchRenderer->GetIndexBuffer(), m_BatchRenderer->GetIndexCount(), m_Projection);
 	}
 
-	void Renderer::EndFrame()
+	void RuntimeRenderer::EndFrame()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -69,11 +71,9 @@ namespace PAL
 		Flush();
 		m_RenderAPI->EndFrame();
 		m_BatchRenderer->End();
-
-		s_RenderStats.Reset();
 	}
 
-	void Renderer::FlushDrawCommands()
+	void RuntimeRenderer::FlushDrawCommands()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -82,7 +82,7 @@ namespace PAL
 		m_RenderAPI->FlushDrawCommands();
 	}
 
-	void Renderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)
+	void RuntimeRenderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -103,7 +103,7 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void Renderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color)
+	void RuntimeRenderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -118,33 +118,31 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void Renderer::RecordDrawCommand(const std::function<void()>& command)
+	void RuntimeRenderer::RecordDrawCommand(const std::function<void()>& command)
 	{
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		m_RenderAPI->RecordDrawCommand(command);
 	}
 
-	void Renderer::WaitForIdle()
+	void RuntimeRenderer::WaitForIdle()
 	{
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		m_RenderAPI->WaitForIdle();
 	}
 
-	void Renderer::ResizeFrameBuffer(bool resize, uint32_t width, uint32_t height)
+	void RuntimeRenderer::ResizeFrameBuffer(bool resize, uint32_t width, uint32_t height)
 	{
 		m_RenderAPI->ResizeFrameBuffer(resize, width, height);
 	}
 
-	void Renderer::PresentFrame()
+	void* RuntimeRenderer::GetFinalImage(uint32_t index /*= 0*/)
 	{
-		CORE_PROFILER_FUNC();
-
-		m_RenderAPI->PresentFrame();
+		return m_RenderAPI->GetFinalImage(index);
 	}
 
-	void Renderer::SetVSync(bool vsync)
+	void RuntimeRenderer::SetVSync(bool vsync)
 	{
 		m_RenderAPI->SetVSync(vsync);
 	}

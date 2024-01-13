@@ -10,7 +10,7 @@
 #include "CommandBuffer.h"
 #include "vulkan/vulkan_core.h"
 #include "VulkanAPI.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RuntimeRenderer.h"
 
 namespace PAL
 {
