@@ -12,6 +12,7 @@ namespace PAL
 {
 	static void BenchmarkBatchRenderer(World* world, OrthographicCamera& camera)
 	{
+		//float cord = 160.0f; // 100.000 Quads
 		float cord = 5.0f;
 		const glm::vec3 scale(0.45f);
 

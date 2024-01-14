@@ -20,7 +20,6 @@
 
 namespace PAL
 {
-	bool VulkanAPI::s_ResizeFrameBuffer = false;
 	bool VulkanAPI::s_RecreateSwapChainRequested = false;
 
 	void VulkanAPI::Init(const RenderApiSpec& spec)
@@ -54,8 +53,6 @@ namespace PAL
 
 	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, uint32_t width /*= 0*/, uint32_t height /*= 0*/)
 	{
-		s_ResizeFrameBuffer = resize;
-
 		if ((width > 0 && height > 0) &&
 			(width != m_MainFrameBuffer->GetSpecification().Width || height != m_MainFrameBuffer->GetSpecification().Height))
 		{

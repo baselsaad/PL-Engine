@@ -61,7 +61,6 @@ namespace PAL
 		SharedPtr<PipeLine> m_Pipline;
 
 		static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
-		static bool s_ResizeFrameBuffer;
 		static bool s_RecreateSwapChainRequested;
 
 		friend class VulkanSwapChain;

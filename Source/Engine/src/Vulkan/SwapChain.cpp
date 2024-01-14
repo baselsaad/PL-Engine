@@ -269,6 +269,7 @@ namespace PAL
 			createInfo.subresourceRange.layerCount = 1;
 
 			VK_CHECK_RESULT(vkCreateImageView(m_Device->GetVkDevice(), &createInfo, nullptr, &m_SwapChainImageViews[i]));
+			//Debug::LogWarn("ImageView SwapChain Address {}", (void*)m_SwapChainImageViews[i]);
 		}
 	}
 
@@ -325,7 +326,6 @@ namespace PAL
 		}
 
 		Create();
-		CreateImageViews();
 
 		for (auto& callback : m_ResizeCallbacks)
 		{
@@ -382,13 +382,12 @@ namespace PAL
 		{
 			CORE_PROFILER_SCOPE("Check_RecreateSwapChain");
 
-			bool needRecreate = result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_ResizeFrameBuffer || VulkanAPI::s_RecreateSwapChainRequested;
+			bool needRecreate = result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || VulkanAPI::s_RecreateSwapChainRequested;
 			if (needRecreate)
 			{
 				RecreateSwapChain();
 
 				// reset
-				VulkanAPI::s_ResizeFrameBuffer = false;
 				VulkanAPI::s_RecreateSwapChainRequested = false;
 			}
 		}

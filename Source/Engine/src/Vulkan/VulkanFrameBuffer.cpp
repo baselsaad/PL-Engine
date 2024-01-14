@@ -31,14 +31,14 @@ namespace PAL
 
 		for (int i = 0; i < m_Framebuffers.size(); i++)
 		{
-			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
-
 			if (m_Spec.Target == PresentTarget::CustomViewport)
 			{
 				allocator.DestroyImage(m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
 				vkDestroyImageView(m_Device, m_FramebufferImages[i].ColorImageView, nullptr);
 				vkDestroySampler(m_Device, m_FramebufferImages[i].TextureSampler, nullptr);
 			}
+
+			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
 		}
 	}
 
@@ -93,7 +93,7 @@ namespace PAL
 	{
 		m_FramebufferImages[index].ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		std::array<VkImageView, 2> attachments;
+		std::array<VkImageView, 1> attachments;
 		attachments[0] = m_FramebufferImages[index].ColorImageView; // Color attachment
 
 		//if (m_Spec.useDepth)

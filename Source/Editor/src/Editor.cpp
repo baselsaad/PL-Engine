@@ -52,14 +52,14 @@ namespace PAL
 		RenderpassSpecification& mainRenderpass = spec.ApiSpec.MainRenderpassSpec;
 		mainRenderpass.ColorFormat = m_Swapchain->GetSwapChainImageFormat();
 		mainRenderpass.Target = PresentTarget::CustomViewport;
-		mainRenderpass.UseDepth = true;
+		mainRenderpass.UseDepth = false;
 		mainRenderpass.DebugName = "Main Renderpass";
 
 		FramebufferSpecification& mainFramebuffer = spec.ApiSpec.MainFrameBufferSpec;
 		mainFramebuffer.ColorFormat = m_Swapchain->GetSwapChainImageFormat();
 		mainFramebuffer.Width = 1600;
 		mainFramebuffer.Height = 900;
-		mainFramebuffer.UseDepth = true;
+		mainFramebuffer.UseDepth = false;
 		mainFramebuffer.Target = PresentTarget::CustomViewport;
 		mainFramebuffer.DebugName = "Main Framebuffer";
 
