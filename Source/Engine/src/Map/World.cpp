@@ -12,7 +12,6 @@ namespace PAL
 {
 	static void BenchmarkBatchRenderer(World* world, OrthographicCamera& camera)
 	{
-		//float cord = camera.GetZoom() * 2.0f;
 		float cord = 5.0f;
 		const glm::vec3 scale(0.45f);
 
@@ -23,7 +22,7 @@ namespace PAL
 				glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
 
 				Entity entityTest(world);
-				entityTest.GetTransform().Translation = { x, y, 0.0f };
+				entityTest.GetTransform().Translation = { x, y, -1.0f };
 				entityTest.GetTransform().Scale = glm::vec3(0.45f);
 				entityTest.SetColor(color);
 			}
@@ -54,13 +53,13 @@ namespace PAL
 		entityTest2.SetColor({ 0.00f, 0.44f, 0.87f ,0.5f});
 		entityTest2.GetTransform().Translation.x = 2.0f;
 
+		BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
+
 		if (m_ActiveCamera == nullptr)
 		{
 			m_ActiveCamera = NewShared<OrthographicCamera>(Engine::Get()->GetWindow()->GetAspectRatio());
 			m_ActiveCamera->SetupInput(Engine::Get()->GetInputHandler());
 		}
-
-		//BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
 	}
 
 	void World::OnUpdate(float deltaTime)
@@ -112,6 +111,12 @@ namespace PAL
 	void World::RegisterComponent<RenderComponent>(Entity* entity)
 	{
 		RegisterComponentInternal<RenderComponent>(entity->GetEntityID());
+	}
+
+	template<>
+	void World::RegisterComponent<LayerComponent>(Entity* entity)
+	{
+		RegisterComponentInternal<LayerComponent>(entity->GetEntityID());
 	}
 
 }

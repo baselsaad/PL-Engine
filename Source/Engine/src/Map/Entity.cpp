@@ -13,6 +13,7 @@ namespace PAL
 
 		m_World->RegisterComponent<TransformComponent>(this);
 		m_World->RegisterComponent<RenderComponent>(this);
+		m_World->RegisterComponent<LayerComponent>(this);
 	}
 
 	Entity::~Entity()

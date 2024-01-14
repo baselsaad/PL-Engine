@@ -52,14 +52,14 @@ namespace PAL
 		RenderpassSpecification& mainRenderpass = spec.ApiSpec.MainRenderpassSpec;
 		mainRenderpass.ColorFormat = m_Swapchain->GetSwapChainImageFormat();
 		mainRenderpass.Target = PresentTarget::CustomViewport;
-		mainRenderpass.UseDepth = false;
+		mainRenderpass.UseDepth = true;
 		mainRenderpass.DebugName = "Main Renderpass";
 
 		FramebufferSpecification& mainFramebuffer = spec.ApiSpec.MainFrameBufferSpec;
 		mainFramebuffer.ColorFormat = m_Swapchain->GetSwapChainImageFormat();
 		mainFramebuffer.Width = 1600;
 		mainFramebuffer.Height = 900;
-		mainFramebuffer.UseDepth = false;
+		mainFramebuffer.UseDepth = true;
 		mainFramebuffer.Target = PresentTarget::CustomViewport;
 		mainFramebuffer.DebugName = "Main Framebuffer";
 
@@ -600,7 +600,9 @@ namespace PAL
 			ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
 			ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
 			ImGui::Text("FPS: %d", stats.FramesPerSecond);
+			ImGui::Text("DrawCommandsQueue Usage: %d bytes", stats.DrawCommandsQueueUsage);
 
+			ImGui::NewLine();
 			ImGui::Text("MemoryUsage: %.5f mb", AllocationTracker::GetCurrentUsage());
 			ImGui::Text("TotalAllocted: %.5f mb", AllocationTracker::GetTotalAllocated());
 			ImGui::Text("TotalFreed: %.5f mb", AllocationTracker::GetTotalFreed());

@@ -7,7 +7,7 @@ namespace PAL
 
 	enum class PresentTarget
 	{
-		Swapchain, 
+		Swapchain,
 		CustomViewport
 	};
 
@@ -49,10 +49,11 @@ namespace PAL
 
 		virtual void BeginFrame() = 0;
 		virtual void EndFrame() = 0;
-		virtual	void FlushDrawCommands() = 0;
+
+		virtual void BeginMainPass() = 0;
+		virtual void EndMainPass() = 0;
 
 		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) = 0; // delete Later
-		virtual void RecordDrawCommand(std::function<void()>&& command) = 0;
 
 		virtual void WaitForIdle() = 0;
 		virtual void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0) = 0;

@@ -63,12 +63,6 @@ namespace PAL
 		}
 	}
 
-	void VulkanAPI::RecordDrawCommand(std::function<void()>&& command)
-	{
-		//@TODO: improve this because std::function will allocate memory every time we sumbit new draw command 
-		m_DrawCommands.push_back(command);
-	}
-
 	void VulkanAPI::SetVSync(bool vsync)
 	{
 		s_RecreateSwapChainRequested = true;
@@ -109,7 +103,7 @@ namespace PAL
 		VK_CHECK_RESULT(vkEndCommandBuffer(m_Device->GetCurrentCommandBuffer()));
 	}
 
-	void VulkanAPI::FlushDrawCommands()
+	void VulkanAPI::BeginMainPass()
 	{
 		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
@@ -130,38 +124,25 @@ namespace PAL
 		vkCmdSetScissor(m_Device->GetCurrentCommandBuffer(), 0, 1, &scissor);
 
 		m_MainRenderPass->Begin(m_Device->GetCurrentCommandBuffer(), swapchain->GetImageIndex());
-		{
-			// Execute Draw Commands
-			for (auto& func : m_DrawCommands)
-			{
-				if (func)
-				{
-					func();
-				}
-			}
+	}
 
-			RuntimeRenderer::GetStats().DrawCalls = m_DrawCommands.size();
-			m_DrawCommands.clear();
-		}
+	void VulkanAPI::EndMainPass()
+	{
 		m_MainRenderPass->End(m_Device->GetCurrentCommandBuffer());
 	}
 
 	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
-		RecordDrawCommand([this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
-		{
-			const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
+		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
-			// Bind VertexBuffer
-			VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(m_Device->GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
+		// Bind VertexBuffer
+		VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(m_Device->GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
 
-			// Bind IndexBuffer
-			vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
-			vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
-		});
+		// Bind IndexBuffer
+		vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
+		vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
 	}
-
 }

@@ -46,4 +46,12 @@ namespace PAL
 		glm::vec4& GetColor() { return Color; }
 	};
 
+	struct LayerComponent
+	{
+		int64_t Layer;
+
+		inline void SetLayer(int64_t layer) { Layer = layer; }
+		inline int64_t GetLayer() { return Layer; }
+	};
+
 }

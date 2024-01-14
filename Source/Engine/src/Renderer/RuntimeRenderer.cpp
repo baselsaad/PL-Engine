@@ -25,7 +25,7 @@ namespace PAL
 		{
 			case PAL::RenderAPITarget::Vulkan:	m_RenderAPI = NewShared<VulkanAPI>();		break;
 			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
-			
+
 			default:							ASSERT(false, "");							break;
 		}
 
@@ -59,7 +59,14 @@ namespace PAL
 
 		// Quads
 		m_BatchRenderer->BindCurrentQuadBatch();
-		m_RenderAPI->DrawQuad(m_BatchRenderer->GetVertexBuffer(), m_BatchRenderer->GetIndexBuffer(), m_BatchRenderer->GetIndexCount(), m_Projection);
+
+		const auto& vertexBuffer = m_BatchRenderer->GetVertexBuffer();
+		uint32_t indexCount = m_BatchRenderer->GetIndexCount();
+
+		m_DrawCommandsQueue.Record([this, vertexBuffer, indexCount]()
+		{
+			m_RenderAPI->DrawQuad(vertexBuffer, m_BatchRenderer->GetIndexBuffer(), indexCount, m_Projection);
+		});
 	}
 
 	void RuntimeRenderer::EndFrame()
@@ -79,7 +86,15 @@ namespace PAL
 
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		m_RenderAPI->FlushDrawCommands();
+		s_RenderStats.DrawCalls = m_DrawCommandsQueue.GetCommandsCount();
+		s_RenderStats.DrawCommandsQueueUsage = m_DrawCommandsQueue.GetCommandsUsage();
+
+		m_RenderAPI->BeginMainPass();
+		{
+			m_DrawCommandsQueue.ExecuteAll();
+			m_DrawCommandsQueue.Clear();
+		}
+		m_RenderAPI->EndMainPass();
 	}
 
 	void RuntimeRenderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)
@@ -99,7 +114,6 @@ namespace PAL
 			* glm::scale(glm::mat4(1.0f), scale);
 
 		m_BatchRenderer->AddQuadToBatch(transform, color);
-		//s_BatchRenderer->AddQuadToBatch(translation, scale, color);
 		s_RenderStats.Quads++;
 	}
 
@@ -116,13 +130,6 @@ namespace PAL
 
 		m_BatchRenderer->AddQuadToBatch(transform.GetTransformMatrix(), color);
 		s_RenderStats.Quads++;
-	}
-
-	void RuntimeRenderer::RecordDrawCommand(std::function<void()>&& command)
-	{
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
-
-		m_RenderAPI->RecordDrawCommand(std::forward<std::function<void()>>(command));
 	}
 
 	void RuntimeRenderer::WaitForIdle()

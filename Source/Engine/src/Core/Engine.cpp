@@ -63,8 +63,6 @@ namespace PAL
 		delete m_App;
 
 		m_Window->Close();
-
-		Debug::Info("TotalAllocted: {} MB, TotalFreed: {}MB", AllocationTracker::GetTotalAllocated(), AllocationTracker::GetTotalFreed());
 	}
 
 	void Engine::Exit()
@@ -131,8 +129,6 @@ namespace PAL
 
 	void Engine::OnResizeWindow(const ResizeWindowEvent& event)
 	{
-		//Debug::Log("Resize Window: {}, {}", event.GetWidth(), event.GetHeight());
-
 		m_Window->OnResize(event.GetWidth(), event.GetHeight());
 	}
 

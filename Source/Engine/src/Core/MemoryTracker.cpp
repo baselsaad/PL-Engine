@@ -53,6 +53,9 @@ namespace PAL
 
 	void AllocationTracker::Free(void* const block)
 	{
+		if (s_AllocationMap == nullptr)
+			return;
+
 		if (block == nullptr)
 		{
 			free(block);

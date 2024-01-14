@@ -1,6 +1,7 @@
 #pragma once
 #include "BatchRenderer.h"
 #include "Camera.h"
+#include "RenderingCommands.h"
 
 namespace PAL
 {
@@ -24,9 +25,11 @@ namespace PAL
 
 	struct RenderStats
 	{
-		int Quads = 0;
-		int DrawCalls = 0;
-		int VertexBufferCount = 0;
+		uint32_t Quads = 0;
+		uint32_t DrawCalls = 0;
+		uint32_t VertexBufferCount = 0;
+		uint32_t DrawCommandsQueueUsage = 0;
+		
 
 		float FrameTime = 0.0f;
 		float FrameTime_ms = 0.0f;
@@ -60,16 +63,20 @@ namespace PAL
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 
-		void RecordDrawCommand(std::function<void()>&& command);
+		template<typename FuncType>
+		void RecordDrawCommand(FuncType&& command)
+		{
+			m_DrawCommandsQueue.Record(command);
+		}
+
 		void WaitForIdle();
 		void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0);
 		void* GetFinalImage(uint32_t index = 0);
 
 		void SetVSync(bool vsync);
 
-		static RenderStats& GetStats() { return s_RenderStats; }
+		inline static RenderStats& GetStats() { return s_RenderStats; }
 		inline SharedPtr<IRenderAPI>& GetRenderAPI() { return m_RenderAPI; }
-
 		inline const RuntimeRendererSpecification& GetRuntimeRendererSpec () const { return m_RuntimeRendererSpecification; }
 	
 	private:
@@ -80,6 +87,7 @@ namespace PAL
 
 		SharedPtr<IRenderAPI> m_RenderAPI;
 		BatchRenderer* m_BatchRenderer;
+		CommandsQueue m_DrawCommandsQueue;
 
 		RuntimeRendererSpecification m_RuntimeRendererSpecification;
 
