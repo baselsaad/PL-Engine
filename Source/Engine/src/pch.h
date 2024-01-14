@@ -1,5 +1,7 @@
 #pragma once
 
+
+
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -42,7 +44,7 @@
 #endif
 
 //Engine
-
+#include "Core/MemoryTracker.h"
 #include "Core/Memory.h"
 #include "Utilities/Debug.h"
 #include "Utilities/Colors.h"

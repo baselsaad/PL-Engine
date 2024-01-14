@@ -18,7 +18,7 @@ namespace PAL
 	//template<typename T>
 	//using SharedPtr = std::shared_ptr<T>;
 
-	
+
 	template<class T>
 	class SharedPtr
 	{
@@ -26,25 +26,25 @@ namespace PAL
 		std::shared_ptr<T> StdSharedPtr;
 
 		// Default constructor
-		SharedPtr() 
+		SharedPtr()
 			: StdSharedPtr(nullptr)
 		{
 		}
 
 		// Constructor that accepts a std::shared_ptr
-		SharedPtr(std::shared_ptr<T> p) 
+		SharedPtr(std::shared_ptr<T> p)
 			: StdSharedPtr(p)
 		{
 		}
 
 		// Copy constructor
-		SharedPtr(const SharedPtr<T>& other) 
+		SharedPtr(const SharedPtr<T>& other)
 			: StdSharedPtr(other.StdSharedPtr)
 		{
 		}
 
 		// Move constructor
-		SharedPtr(SharedPtr<T>&& other) noexcept 
+		SharedPtr(SharedPtr<T>&& other) noexcept
 			: StdSharedPtr(std::move(other.StdSharedPtr))
 		{
 		}
@@ -113,7 +113,7 @@ namespace PAL
 			return StdSharedPtr != nullptr;
 		}
 	};
-	
+
 
 	template<typename T, typename ... Args>
 	std::shared_ptr<T> NewShared(Args&& ... args)
@@ -126,5 +126,4 @@ namespace PAL
 	{
 		return SharedPtr<T2>(std::static_pointer_cast<T2>(obj));
 	}
-
 }

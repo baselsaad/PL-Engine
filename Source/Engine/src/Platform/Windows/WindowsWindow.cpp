@@ -287,6 +287,9 @@ namespace PAL
 
 	void WindowsWindow::Close()
 	{
+		m_SwapChain->CleanupSwapChain();
+		VulkanContext::Shutdown();
+
 		glfwDestroyWindow(m_WindowHandle);
 		glfwTerminate();
 	}

@@ -34,7 +34,7 @@ namespace PAL
 	{
 
 	public:
-		VulkanMemoryAllocator(const std::string& name);
+		VulkanMemoryAllocator(const char* name);
 
 		static void Init(const SharedPtr<VulkanDevice>& device);
 		static void Shutdown();
@@ -60,6 +60,6 @@ namespace PAL
 		static VmaAllocator s_Allocator;
 		static uint64_t s_TotalAllocatedBytes;
 
-		std::string m_Name;
+		const char* m_Name;
 	};
 }

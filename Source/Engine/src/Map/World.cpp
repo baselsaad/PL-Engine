@@ -60,7 +60,7 @@ namespace PAL
 			m_ActiveCamera->SetupInput(Engine::Get()->GetInputHandler());
 		}
 
-		BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
+		//BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
 	}
 
 	void World::OnUpdate(float deltaTime)

@@ -118,11 +118,11 @@ namespace PAL
 		s_RenderStats.Quads++;
 	}
 
-	void RuntimeRenderer::RecordDrawCommand(const std::function<void()>& command)
+	void RuntimeRenderer::RecordDrawCommand(std::function<void()>&& command)
 	{
 		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		m_RenderAPI->RecordDrawCommand(command);
+		m_RenderAPI->RecordDrawCommand(std::forward<std::function<void()>>(command));
 	}
 
 	void RuntimeRenderer::WaitForIdle()

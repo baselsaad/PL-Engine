@@ -63,6 +63,8 @@ namespace PAL
 		delete m_App;
 
 		m_Window->Close();
+
+		Debug::Info("TotalAllocted: {} MB, TotalFreed: {}MB", AllocationTracker::GetTotalAllocated(), AllocationTracker::GetTotalFreed());
 	}
 
 	void Engine::Exit()
@@ -91,11 +93,11 @@ namespace PAL
 
 	void Engine::EngineLoop()
 	{
-		// should: tick the 
+		// EngineLoop should tick: 
 		// 1- m_DeltaTime
-		// 2-window(PollEvents)
+		// 2-Window(PollEvents)
 		// 3-App(Editor, Runtime, etc)
-		// 4-timerManager(like ue)
+		// 4-TimerManager(like ue)
 		// 5-plugins -> PresentFrame 
 
 		while (!m_ShouldClose)

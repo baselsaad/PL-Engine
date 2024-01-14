@@ -100,6 +100,7 @@ namespace PAL
 		, Purple
 		, Tan
 		};
+
 	};
 
 	static const RGBA HighLightColor{ 0.77f, 0.12f, 0.23f, 0.4f };

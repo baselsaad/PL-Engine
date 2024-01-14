@@ -25,6 +25,7 @@
 #include "Vulkan/VulkanFramebuffer.h"
 #include "Map/World.h"
 #include "ImguiUtil.h"
+#include "Core/MemoryTracker.h"
 
 namespace PAL
 {
@@ -97,6 +98,8 @@ namespace PAL
 
 	void Editor::OnShutdown()
 	{
+		m_RuntimeRenderer->WaitForIdle();
+
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -104,6 +107,8 @@ namespace PAL
 		vkDestroyDescriptorPool(VulkanContext::GetVulkanDevice()->GetVkDevice(), s_DescriptorPool, nullptr);
 		vkDestroyRenderPass(VulkanContext::GetVulkanDevice()->GetVkDevice(), m_ImGuiRenderPass, nullptr);
 		s_ImGuiFramebuffer->Shutdown();
+
+		m_RuntimeRenderer->Shutdown();
 	}
 
 	void Editor::SetupVulkan()
@@ -596,6 +601,10 @@ namespace PAL
 			ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
 			ImGui::Text("FPS: %d", stats.FramesPerSecond);
 
+			ImGui::Text("MemoryUsage: %.5f mb", AllocationTracker::GetCurrentUsage());
+			ImGui::Text("TotalAllocted: %.5f mb", AllocationTracker::GetTotalAllocated());
+			ImGui::Text("TotalFreed: %.5f mb", AllocationTracker::GetTotalFreed());
+
 			ImGui::End();
 		}
 
@@ -745,8 +754,8 @@ namespace PAL
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(s_ImGuiCommandBuffers[commandBufferIndex]));
 
-		std::vector<VkCommandBuffer> commandBuffers;
-		commandBuffers.push_back(s_ImGuiCommandBuffers[commandBufferIndex]);
+		std::array<VkCommandBuffer, 1> commandBuffers;
+		commandBuffers[0] = (s_ImGuiCommandBuffers[commandBufferIndex]);
 
 		vkCmdExecuteCommands(mainCommandBuffer, uint32_t(commandBuffers.size()), commandBuffers.data());
 

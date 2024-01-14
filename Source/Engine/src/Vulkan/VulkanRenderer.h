@@ -12,6 +12,22 @@ namespace PAL
 	class VulkanIndexBuffer;
 	class VulkanFramebuffer;
 
+	template <typename Callable>
+	class DrawCommand {
+	private:
+		Callable m_Callable;
+
+	public:
+		DrawCommand(Callable callable) 
+			: m_Callable(std::move(callable))
+		{}
+
+		void operator()()
+		{
+			m_Callable();
+		}
+	};
+
 
 	class VulkanAPI : public IRenderAPI
 	{
@@ -28,7 +44,7 @@ namespace PAL
 		virtual void WaitForIdle() override;
 		virtual void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0) override;
 
-		virtual void RecordDrawCommand(const std::function<void()>& drawCommand);
+		virtual void RecordDrawCommand(std::function<void()>&& drawCommand);
 		virtual void SetVSync(bool vsync) override;
 		virtual void* GetFinalImage(uint32_t index = 0) override;
 

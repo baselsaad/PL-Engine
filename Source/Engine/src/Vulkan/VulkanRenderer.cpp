@@ -44,7 +44,7 @@ namespace PAL
 		m_MainFrameBuffer->Shutdown();
 
 		VulkanMemoryAllocator::Shutdown();
-		VulkanContext::Shutdown();
+		
 	}
 
 	void VulkanAPI::WaitForIdle()
@@ -56,15 +56,16 @@ namespace PAL
 	{
 		s_ResizeFrameBuffer = resize;
 
-		if ((width > 0 && height > 0) && 
+		if ((width > 0 && height > 0) &&
 			(width != m_MainFrameBuffer->GetSpecification().Width || height != m_MainFrameBuffer->GetSpecification().Height))
 		{
 			m_MainFrameBuffer->Resize(width, height);
 		}
 	}
 
-	void VulkanAPI::RecordDrawCommand(const std::function<void()>& command)
+	void VulkanAPI::RecordDrawCommand(std::function<void()>&& command)
 	{
+		//@TODO: improve this because std::function will allocate memory every time we sumbit new draw command 
 		m_DrawCommands.push_back(command);
 	}
 
@@ -147,7 +148,7 @@ namespace PAL
 
 	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
-		auto drawCommand = [this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
+		RecordDrawCommand([this, vertexBuffer, indexBuffer, indexCount, projection]() -> void
 		{
 			const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
@@ -160,9 +161,7 @@ namespace PAL
 			vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 			vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
 			vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
-		};
-
-		RecordDrawCommand(drawCommand);
+		});
 	}
 
 }

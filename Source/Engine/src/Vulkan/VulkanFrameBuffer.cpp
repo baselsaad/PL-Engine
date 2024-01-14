@@ -44,7 +44,7 @@ namespace PAL
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
 	{
-		VulkanMemoryAllocator allocator(m_Spec.DebugName + "FrameBuffer Image");
+		VulkanMemoryAllocator allocator("FrameBuffer Image");
 		for (int i = 0; i < m_Framebuffers.size(); i++)
 		{
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
@@ -146,7 +146,7 @@ namespace PAL
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VulkanMemoryAllocator allocator(m_Spec.DebugName + "FrameBuffer Image");
+		VulkanMemoryAllocator allocator("FrameBuffer Image");
 		outAllocation = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_GPU_ONLY, image);
 	}
 

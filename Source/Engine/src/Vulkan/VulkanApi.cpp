@@ -22,7 +22,7 @@ namespace PAL
 	VmaAllocator VulkanMemoryAllocator::s_Allocator;
 	uint64_t VulkanMemoryAllocator::s_TotalAllocatedBytes;
 
-	VulkanMemoryAllocator::VulkanMemoryAllocator(const std::string& name)
+	VulkanMemoryAllocator::VulkanMemoryAllocator(const char* name)
 		: m_Name(name)
 	{
 	}

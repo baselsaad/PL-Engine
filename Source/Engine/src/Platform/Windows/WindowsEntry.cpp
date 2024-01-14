@@ -4,6 +4,7 @@
 #include "Core/Engine.h"
 #include "Utilities/Timer.h"
 #include "Utilities/Log.h"
+#include "Core/MemoryTracker.h"
 
 #if PLATFORM_WINDOWS 
 
@@ -30,6 +31,8 @@ namespace PAL
 		BEGIN_PROFILE_SESSION("Engine Shutdown Session");
 		engine.Stop();
 		END_PROFILE_SESSION();
+
+		
 
 		return 0;
 	}

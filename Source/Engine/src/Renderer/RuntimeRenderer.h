@@ -60,7 +60,7 @@ namespace PAL
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 
-		void RecordDrawCommand(const std::function<void()>& command);
+		void RecordDrawCommand(std::function<void()>&& command);
 		void WaitForIdle();
 		void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0);
 		void* GetFinalImage(uint32_t index = 0);

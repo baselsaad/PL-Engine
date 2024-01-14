@@ -28,6 +28,8 @@ namespace PAL
 		void Create();
 		void RecreateSwapChain();
 		void PresentFrame();
+		void CleanupSwapChain();
+
 
 		uint32_t AcquireNextImage(const SharedPtr<RenderPass>& renderpass);
 		static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
@@ -47,7 +49,6 @@ namespace PAL
 	private:
 		void CreateSyncObjects();
 		void CreateImageViews();
-		void CleanupSwapChain();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vsync);
