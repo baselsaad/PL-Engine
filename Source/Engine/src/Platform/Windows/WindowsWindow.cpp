@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "WindowsWindow.h"
+
 #include "Vulkan/SwapChain.h"
 #include "Vulkan/VulkanContext.h"
 #include <type_traits>
 #include "Event/Event.h"
 #include "Event/EventHandler.h"
-
 
 namespace PAL
 {
@@ -20,7 +20,7 @@ namespace PAL
 	{
 
 		int state = glfwInit();
-		ASSERT(state == GLFW_TRUE, "GLFW cannot be initialized!");
+		PAL_ASSERT(state == GLFW_TRUE, "GLFW cannot be initialized!");
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -28,7 +28,7 @@ namespace PAL
 		m_WindowHandle = glfwCreateWindow(data.Width, data.Height, data.Title.c_str(), nullptr, nullptr);
 		SetScreenMode(data.Mode, data.Width, data.Height);
 
-		ASSERT(m_WindowHandle, "Window is null!");
+		PAL_ASSERT(m_WindowHandle, "Window is null!");
 		SetVsync(data.Vsync);
 
 		// Make the window's context current

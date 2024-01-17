@@ -1,10 +1,14 @@
 #include "pch.h"
 #include "RenderPass.h"
-#include "Core/Engine.h"
-#include "Core/Window.h"
+
 #include "Vulkan/SwapChain.h"
 #include "VulkanContext.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanDevice.h"
+
+#include "Core/Engine.h"
+#include "Core/Window.h"
+
 
 namespace PAL
 {
@@ -69,18 +73,8 @@ namespace PAL
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
 		renderPassInfo.framebuffer = m_Framebuffer->GetFramebuffer(imageIndex);
-
 		renderPassInfo.renderArea.offset = { 0, 0 };
-
-		if (m_RenderpassSpec.Target == PresentTarget::CustomViewport)
-		{
-			VkExtent2D extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };
-			renderPassInfo.renderArea.extent = extent;
-		}
-		else
-		{
-			renderPassInfo.renderArea.extent = swapchain->GetSwapChainExtent();
-		}
+		renderPassInfo.renderArea.extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };;
 
 		VkClearValue clearValues[1];
 		clearValues[0].color = { {0.0f, 0.0f,0.0f, 1.0f} };

@@ -4,7 +4,7 @@
 #include "RenderPass.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
-#include "VertexBuffer.h"
+#include "VulkanVertexBuffer.h"
 
 namespace PAL
 {
@@ -40,8 +40,8 @@ namespace PAL
 
 		// pVertexBindingDescriptions & pVertexAttributeDescriptions (VertexBuffer Input)
 
-		auto bindingDescription = QuadVertex::GetBindingDescription();
-		auto attributeDescriptions = QuadVertex::GetAttributeDescriptions();
+		auto bindingDescription = VulkanQuadVertex::GetBindingDescription();
+		auto attributeDescriptions = VulkanQuadVertex::GetAttributeDescriptions();
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());

@@ -54,4 +54,12 @@ namespace PAL
 		inline int64_t GetLayer() { return Layer; }
 	};
 
+	struct TagComponent
+	{
+		std::string Tag;
+
+		inline void SetLayer(std::string_view tag) { Tag = tag; }
+		inline std::string_view GetTag() { return Tag; }
+	};
+
 }

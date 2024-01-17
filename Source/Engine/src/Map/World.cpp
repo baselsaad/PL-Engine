@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "World.h"
+
 #include "Renderer/RuntimeRenderer.h"
+#include "Renderer/OrthographicCamera.h"
+
+#include "Core/Engine.h"
 #include "Utilities/Colors.h"
 #include "Entity.h"
-#include "Renderer/OrthographicCamera.h"
-#include "Core/Engine.h"
 #include "ECS.h"
 #include "Utilities/Timer.h"
 
@@ -49,10 +51,12 @@ namespace PAL
 
 		Entity entityTest(this);
 		entityTest.SetColor(Colors::Orange);
+		entityTest.GetComponent<TagComponent>().Tag = "OrangeEntity";
 
 		Entity entityTest2(this);
-		entityTest2.SetColor({ 0.00f, 0.44f, 0.87f ,0.5f});
+		entityTest2.SetColor(Colors::Blue);
 		entityTest2.GetTransform().Translation.x = 2.0f;
+		entityTest2.GetComponent<TagComponent>().Tag = "BlueEntity";
 
 		BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
 
@@ -74,14 +78,7 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		const glm::vec2& viewportSize = Engine::Get()->GetViewportSize();
-		float aspectRatio = viewportSize.x / viewportSize.y;
-		if (glm::epsilonNotEqual(aspectRatio, m_ActiveCamera->GetAspectRatio(), EPSLON))
-		{
-			m_ActiveCamera->SetAspectRatio(aspectRatio);
-		}
 		m_ActiveCamera->OnUpdate(deltaTime);
-
 		Engine::Get()->GetRuntimeRenderer()->SetProjection(m_ActiveCamera->GetModellViewProjection());
 
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
@@ -118,6 +115,12 @@ namespace PAL
 	void World::RegisterComponent<LayerComponent>(Entity* entity)
 	{
 		RegisterComponentInternal<LayerComponent>(entity->GetEntityID());
+	}
+
+	template<>
+	void World::RegisterComponent<TagComponent>(Entity* entity)
+	{
+		RegisterComponentInternal<TagComponent>(entity->GetEntityID());
 	}
 
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Platform/PlatformEntry.h"
+#include "Core/Engine.h"
 #include "Editor.h"
 
 namespace PAL

@@ -55,6 +55,12 @@ namespace PAL
 			return SharedPtr<T2>(std::static_pointer_cast<T2>(StdSharedPtr));
 		}
 
+		template<typename T2>
+		SharedPtr<T2> As() const
+		{
+			return SharedPtr<T2>(std::static_pointer_cast<T2>(StdSharedPtr));
+		}
+
 		// Assignment operator for SharedPtr
 		inline SharedPtr& operator=(const SharedPtr<T>& other)
 		{

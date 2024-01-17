@@ -40,7 +40,7 @@ IncludeDir["Optick"] = "%{wks.location}/Source/Engine/vendor/optick/src/"
 
 Library = {}
 Library["Vulkan"] = "%{VULKAN_SDK}/Lib/vulkan-1.lib"
-Library["VulkanUtils"] = "%{VULKAN_SDK}/Lib/VkLayer_utils.lib"
+
 
 -- Projects
 group "Dependencies"

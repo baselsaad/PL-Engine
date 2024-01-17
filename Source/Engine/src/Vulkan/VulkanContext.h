@@ -1,5 +1,4 @@
 #pragma once
-#include "VulkanAPI.h"
 
 namespace PAL
 {

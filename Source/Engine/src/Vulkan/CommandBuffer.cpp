@@ -1,4 +1,5 @@
 #include "pch.h"
+
 #include "CommandBuffer.h"
 #include "VulkanDevice.h"
 #include "VulkanContext.h"
@@ -6,8 +7,8 @@
 #include "SwapChain.h"
 #include "GraphhicsPipeline.h"
 #include "VulkanRenderer.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
+#include "VulkanVertexBuffer.h"
+#include "VulkanIndexBuffer.h"
 
 namespace PAL
 {

@@ -62,7 +62,6 @@ project "Engine"
 		"ImGui",
 		"Optick",
 		"%{Library.Vulkan}",
-		"%{Library.VulkanUtils}"
 	}
 
 	filter "system:windows"

@@ -1,10 +1,9 @@
 #include "pch.h"
-
 #include "Platform/PlatformEntry.h"
+
 #include "Core/Engine.h"
 #include "Utilities/Timer.h"
 #include "Utilities/Log.h"
-#include "Core/MemoryTracker.h"
 
 #if PLATFORM_WINDOWS 
 
@@ -29,10 +28,8 @@ namespace PAL
 		END_PROFILE_SESSION();
 
 		BEGIN_PROFILE_SESSION("Engine Shutdown Session");
-		engine.Stop();
+		engine.Exit();
 		END_PROFILE_SESSION();
-
-		
 
 		return 0;
 	}

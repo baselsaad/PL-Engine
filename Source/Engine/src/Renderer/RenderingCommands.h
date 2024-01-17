@@ -2,19 +2,19 @@
 
 namespace PAL
 {
-	class ICommand
+	class Command
 	{
 	public:
-		virtual ~ICommand() = default;
+		virtual ~Command() = default;
 		virtual void Execute() = 0;
 		virtual size_t Size() const = 0;
 	};
 
 	template<typename T>
-	class Command : public ICommand
+	class DrawCommand : public Command
 	{
 	public:
-		Command(T&& func) 
+		DrawCommand(T&& func)
 			: m_Func(std::move(func))
 		{
 		}
@@ -26,7 +26,7 @@ namespace PAL
 
 		size_t Size() const override
 		{
-			return sizeof(Command<T>);
+			return sizeof(DrawCommand<T>);
 		}
 
 	private:
@@ -43,16 +43,16 @@ namespace PAL
 		template<typename T>
 		void Record(T&& func)
 		{
-			uint32_t spaceNeeded = sizeof(Command<T>);
-			ASSERT(m_BufferUsed + spaceNeeded <= m_BufferSize, "Not enough space to record the command!!!");
-			
+			uint32_t spaceNeeded = sizeof(DrawCommand<T>);
+			PAL_ASSERT(m_BufferUsed + spaceNeeded <= m_BufferSize, "try to allocate {} bytes, but the buffer has {} bytes", spaceNeeded, m_BufferSize - m_BufferUsed);
+
 			void* place = m_Buffer + m_BufferUsed;
-			ICommand* command = new (place) Command<T>(std::forward<T>(func));
+			Command* command = new (place) DrawCommand<T>(std::forward<T>(func));
 			m_BufferUsed += spaceNeeded;
 			m_TotalCommandsCount++;
 		}
 
-		void ExecuteAll();
+		void ExecuteAndClear();
 		void Clear();
 
 		inline uint32_t GetCommandsCount() const { return m_TotalCommandsCount; }
@@ -64,4 +64,8 @@ namespace PAL
 		uint32_t m_BufferUsed;
 		uint32_t m_TotalCommandsCount;
 	};
+
+	
+
+
 }

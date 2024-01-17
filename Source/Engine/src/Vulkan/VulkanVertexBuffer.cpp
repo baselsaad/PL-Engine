@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "VertexBuffer.h"
+#include "VulkanVertexBuffer.h"
 
 #include "GraphhicsPipeline.h"
 #include "RenderPass.h"
@@ -8,8 +8,9 @@
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
 #include "CommandBuffer.h"
-#include "vulkan/vulkan_core.h"
+#include "VulkanMemoryAllocator.h"
 #include "VulkanAPI.h"
+
 #include "Renderer/RuntimeRenderer.h"
 
 namespace PAL
@@ -36,17 +37,11 @@ namespace PAL
 		allocator.DestroyBuffer(m_VertexBuffer, m_VmaAllocation);
 	}
 
-	void VulkanVertexBuffer::SetData(QuadVertex* data, uint32_t size, uint32_t offset)
+	void VulkanVertexBuffer::SetData(void* data, uint32_t size, uint32_t offset)
 	{
-		auto command = [data, size, offset, this]()
-		{
-			VulkanMemoryAllocator allocator("VulkanVertexBuffer");
-			uint8_t* pData = allocator.MapMemory<uint8_t>(m_VmaAllocation);
-			memcpy(pData, (uint8_t*)data + offset, size);
-			allocator.UnmapMemory(m_VmaAllocation);
-		};
-
-		//Renderer::SubmitCommand(command);
-		command();
+		VulkanMemoryAllocator allocator("VulkanVertexBuffer");
+		uint8_t* pData = allocator.MapMemory<uint8_t>(m_VmaAllocation);
+		memcpy(pData, (uint8_t*)data + offset, size);
+		allocator.UnmapMemory(m_VmaAllocation);
 	}
 }

@@ -14,7 +14,7 @@ namespace PAL
 
 		if (!file.is_open())
 		{
-			ASSERT(false, "failed to open file!");
+			PAL_ASSERT(false, "failed to open file!");
 		}
 
 		size_t fileSize = (size_t)file.tellg();

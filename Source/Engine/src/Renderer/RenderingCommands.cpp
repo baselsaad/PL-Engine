@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "RenderingCommands.h"
+#include "Utilities/Timer.h"
 
 
 namespace PAL
@@ -17,16 +18,23 @@ namespace PAL
 		delete[] m_Buffer;
 	}
 
-	void CommandsQueue::ExecuteAll()
+	void CommandsQueue::ExecuteAndClear()
 	{
+		CORE_PROFILER_FUNC();
+
 		uint32_t offset = 0;
 
 		while (offset < m_BufferUsed)
 		{
-			ICommand* cmd = reinterpret_cast<ICommand*>(m_Buffer + offset);
+			Command* cmd = reinterpret_cast<Command*>(m_Buffer + offset);
 			cmd->Execute();
 			offset += cmd->Size();
+
+			cmd->~Command();
 		}
+
+		m_BufferUsed = 0;
+		m_TotalCommandsCount = 0;
 	}
 
 	void CommandsQueue::Clear()
@@ -35,8 +43,8 @@ namespace PAL
 
 		while (offset < m_BufferUsed)
 		{
-			ICommand* cmd = reinterpret_cast<ICommand*>(m_Buffer + offset);
-			cmd->~ICommand();
+			Command* cmd = reinterpret_cast<Command*>(m_Buffer + offset);
+			cmd->~Command();
 			offset += cmd->Size();
 		}
 

@@ -1,17 +1,18 @@
 #pragma once
 #include "VulkanAPI.h"
+#include "Renderer/IndexBuffer.h"
 
 namespace PAL
 {
 	class CommandBuffer;
 
-	class VulkanIndexBuffer
+	class VulkanIndexBuffer : public IndexBuffer
 	{
 	public:
-		VulkanIndexBuffer(const SharedPtr<CommandBuffer>& cmBuffer, void* data, uint32_t size);
+		VulkanIndexBuffer(void* data, uint32_t size);
 		~VulkanIndexBuffer();
 
-		void DestroyBuffer();
+		virtual void DestroyBuffer() override;
 
 		inline const VkBuffer GetVkIndexBuffer() { return m_IndexBuffer; }
 		inline uint32_t GetSize() { return m_Size; }

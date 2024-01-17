@@ -5,18 +5,21 @@
 #include "Event/EventHandler.h"
 #include "Math/Math.h"
 #include "glm/gtc/epsilon.hpp"
+#include "Core/Engine.h"
 
 namespace PAL
 {
 	OrthographicCamera::OrthographicCamera(float aspectratio)
 		: Camera(aspectratio)
 		, m_Zoom(1.0f)
+		, m_LastMousePos(0.0f)
 	{
 		SetAspectRatio(aspectratio);
 	}
 
 	void OrthographicCamera::OnUpdate(float deltaTime)
 	{
+
 		if (Input::IsKeyPressed(KeyCode::A))
 		{
 			m_CameraPosition.x -= m_CameraMoveSpeed * deltaTime;

@@ -1,6 +1,7 @@
 #pragma once
 #include "imgui.h"
 #include "Platform/PlatformEntry.h"
+#include "UI/HierarchyPanel.h"
 
 namespace PAL
 {
@@ -36,12 +37,13 @@ namespace PAL
 		void SetStyleDark();
 		
 		void BeginFrame();
-		void OnRenderImGui(VulkanImage* image);
+		void RenderImGui(VulkanImage* image);
 		void EndFrame();
 
 		inline ImFont* GetFont(ImGuiFonts font = ImGuiFonts::Regular) { return m_ImGuiFonts[font]; }
 	
 	private:
+		HierarchyPanel m_HierarchyPanel;
 		std::map<ImGuiFonts, ImFont*> m_ImGuiFonts;
 
 		// Move Later

@@ -11,17 +11,17 @@
 
 #if DEBUG
 
-#define ASSERT(x, Msg)			\
-		if (!(x))				\
-		{						\
-			ASSERT_ERROR(Msg);	\
-			DEBUG_BREAK();		\
+#define PAL_ASSERT(x, ...)			        \
+		if (!(x))					     	\
+		{									\
+			Debug::LogError(__VA_ARGS__);   \
+			DEBUG_BREAK();		            \
 		}
 
-#define CHECK(x, Msg)			\
-		if (!(x))				\
-		{						\
-			ASSERT_WARNING(Msg);\
+#define PAL_CHECK(x, ...)			        \
+		if (!(x))				            \
+		{						            \
+			Debug::LogWarn(__VA_ARGS__);    \
 		}
 
 #define VK_CHECK_RESULT(f)													\
@@ -34,8 +34,8 @@
 	}																		\
 }
 #else
-#define ASSERT(x,MSG)
-#define CHECK(x, Msg)
+#define PAL_ASSERT(x,...)
+#define PAL_CHECK(x, ...)
 #define VK_CHECK_RESULT(f)	(f)
 #endif
 

@@ -1,22 +1,24 @@
 #include "pch.h"
 #include "VulkanRenderer.h"
 
-#include "GraphhicsPipeline.h"
-#include "RenderPass.h"
-#include "Shader.h"
-#include "SwapChain.h"
-#include "VulkanContext.h"
-#include "VulkanDevice.h"
-#include "CommandBuffer.h"
+#include "Vulkan/GraphhicsPipeline.h"
+#include "Vulkan/RenderPass.h"
+#include "Vulkan/Shader.h"
+#include "Vulkan/SwapChain.h"
+#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/CommandBuffer.h"
+#include "Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/VulkanVertexBuffer.h"
+#include "Vulkan/VulkanIndexBuffer.h"
+#include "Vulkan/VulkanMemoryAllocator.h"
+
 
 #include "Core/Engine.h"
 #include "Core/Window.h"
 #include "Renderer/RuntimeRenderer.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Utilities/Timer.h"
-#include "VulkanFramebuffer.h"
 
 namespace PAL
 {
@@ -51,7 +53,7 @@ namespace PAL
 		vkDeviceWaitIdle(VulkanContext::GetVulkanDevice()->GetVkDevice());
 	}
 
-	void VulkanAPI::ResizeFrameBuffer(bool resize /*= false*/, uint32_t width /*= 0*/, uint32_t height /*= 0*/)
+	void VulkanAPI::ResizeFrameBuffer(uint32_t width /*= 0*/, uint32_t height /*= 0*/)
 	{
 		if ((width > 0 && height > 0) &&
 			(width != m_MainFrameBuffer->GetSpecification().Width || height != m_MainFrameBuffer->GetSpecification().Height))
@@ -128,17 +130,17 @@ namespace PAL
 		m_MainRenderPass->End(m_Device->GetCurrentCommandBuffer());
 	}
 
-	void VulkanAPI::DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
+	void VulkanAPI::DrawQuad(const SharedPtr<VertexBuffer>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection)
 	{
 		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		// Bind VertexBuffer
-		VkBuffer vertexBuffers[] = { vertexBuffer->GetVkVertexBuffer() };
+		VkBuffer vertexBuffers[] = { vertexBuffer.As<VulkanVertexBuffer>()->GetVkVertexBuffer() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(m_Device->GetCurrentCommandBuffer(), 0, 1, vertexBuffers, offsets);
 
 		// Bind IndexBuffer
-		vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(m_Device->GetCurrentCommandBuffer(), indexBuffer.As<VulkanIndexBuffer>()->GetVkIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 		vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &projection);
 		vkCmdDrawIndexed(m_Device->GetCurrentCommandBuffer(), indexCount, 1, 0, 0, 0);
 	}

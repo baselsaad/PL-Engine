@@ -293,15 +293,14 @@ namespace PAL
 	{
 
 	public:
-		MouseMoveEvent(double xPos, double yPos)
+		MouseMoveEvent(float xPos, float yPos)
 			: m_XPosition(xPos)
 			, m_YPosition(yPos)
 		{
 		}
 
-		inline double GetXPosition() const { return m_XPosition; }
-		// from BOTTOM_LEFT not TOP_LEFT
-		inline double GetYPosition() const { m_YPosition; }
+		inline float GetXPosition() const { return m_XPosition; }
+		inline float GetYPosition() const { return m_YPosition; }
 
 		virtual EventType GetEventType() override
 		{
@@ -309,8 +308,8 @@ namespace PAL
 		}
 
 	private:
-		double m_XPosition;
-		double m_YPosition;
+		float m_XPosition;
+		float m_YPosition;
 	};
 
 	class MouseScrolledEvent : public Event

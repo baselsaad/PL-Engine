@@ -1,21 +1,23 @@
 #include "pch.h"
-#include "IndexBuffer.h"
+#include "VulkanIndexBuffer.h"
 
-#include "VertexBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
 #include "VulkanRenderer.h"
 #include "CommandBuffer.h"
 #include "VulkanAPI.h"
+#include "VulkanMemoryAllocator.h"
 
 
 namespace PAL
 {
 
-	VulkanIndexBuffer::VulkanIndexBuffer(const SharedPtr<CommandBuffer>& cmBuffer, void* data, uint32_t size)
+	VulkanIndexBuffer::VulkanIndexBuffer(void* data, uint32_t size)
 		: m_Size(size)
 	{
-		auto device = VulkanContext::GetVulkanDevice()->GetVkDevice();
+		auto device = VulkanContext::GetVulkanDevice();
+		const auto& cmBuffer = device->GetMainCommandBuffer();
+
 		VulkanMemoryAllocator allocator("IndexBuffer");
 
 		VkBufferCreateInfo bufferCreateInfo{};

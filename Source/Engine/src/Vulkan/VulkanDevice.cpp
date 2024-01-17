@@ -16,7 +16,7 @@ namespace PAL
 		uint32_t deviceCount = 0;
 
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-		ASSERT(deviceCount > 0, "failed to find GPUs with Vulkan support!");
+		PAL_ASSERT(deviceCount > 0, "failed to find GPUs with Vulkan support!");
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
@@ -34,7 +34,7 @@ namespace PAL
 			}
 		}
 
-		ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
+		PAL_ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
 
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);

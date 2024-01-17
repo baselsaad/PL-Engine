@@ -1,13 +1,12 @@
 #pragma once
 #include "VulkanAPI.h"
-#include "VulkanDevice.h"
-
 
 namespace PAL
 {
 	class Window;
 	class RenderPass;
 	class VulkanFramebuffer;
+	class VulkanDevice;
 
 	struct SwapChainSupportDetails
 	{
@@ -29,7 +28,6 @@ namespace PAL
 		void RecreateSwapChain();
 		void PresentFrame();
 		void CleanupSwapChain();
-
 
 		uint32_t AcquireNextImage(const SharedPtr<RenderPass>& renderpass);
 		static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);

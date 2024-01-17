@@ -12,7 +12,7 @@
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/CommandBuffer.h"
-#include "Vulkan/VertexBuffer.h"
+#include "Vulkan/VulkanVertexBuffer.h"
 #include "Vulkan/VulkanContext.h"
 
 
@@ -34,6 +34,7 @@ namespace PAL
 	static VkDescriptorPool s_DescriptorPool = VK_NULL_HANDLE;
 
 	Editor::Editor()
+		: m_HierarchyPanel(m_CurrentWorld)
 	{
 	}
 
@@ -43,7 +44,7 @@ namespace PAL
 
 	void Editor::Init()
 	{
-		m_Swapchain = Engine::Get()->GetWindow()->GetSwapChain().StdSharedPtr;
+		m_Swapchain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		RuntimeRendererSpecification spec = {};
 		spec.TargetAPI = RenderAPITarget::Vulkan;
@@ -57,8 +58,8 @@ namespace PAL
 
 		FramebufferSpecification& mainFramebuffer = spec.ApiSpec.MainFrameBufferSpec;
 		mainFramebuffer.ColorFormat = m_Swapchain->GetSwapChainImageFormat();
-		mainFramebuffer.Width = 1600;
-		mainFramebuffer.Height = 900;
+		mainFramebuffer.Width = Engine::Get()->GetWindow()->GetWindowWidth();
+		mainFramebuffer.Height = Engine::Get()->GetWindow()->GetWindowHeight();
 		mainFramebuffer.UseDepth = false;
 		mainFramebuffer.Target = PresentTarget::CustomViewport;
 		mainFramebuffer.DebugName = "Main Framebuffer";
@@ -76,7 +77,8 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		m_RuntimeRenderer->ResizeFrameBuffer(false, m_ViewportSize.x, m_ViewportSize.y);
+		if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
+			m_RuntimeRenderer->ResizeFrameBuffer(m_ViewportSize.x, m_ViewportSize.y);
 
 		m_RuntimeRenderer->StartFrame();
 
@@ -87,9 +89,9 @@ namespace PAL
 
 		// Imgui UI on top 
 		{
-			CORE_PROFILER_SCOPE("BeginFrame_ImGui");
+			CORE_PROFILER_SCOPE("RenderImGui");
 			BeginFrame();
-			OnRenderImGui((VulkanImage*)m_RuntimeRenderer->GetFinalImage(m_Swapchain->GetImageIndex()));
+			RenderImGui((VulkanImage*)m_RuntimeRenderer->GetFinalImage(m_Swapchain->GetImageIndex()));
 			EndFrame();
 		}
 
@@ -147,9 +149,12 @@ namespace PAL
 
 			// if DONOT_CARE the ui will be rendered on top of the prev one (the prev one is responsible for clearing)
 			// @TODO: Create a render pass just for clearing 
-			
-			//attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Use this if we render the main pass to the window with imgui 
-			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+			if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainRenderpassSpec.Target == PresentTarget::CustomViewport)
+				attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			else
+				attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Use this if we render the main pass to the window with imgui 
+
 			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -268,6 +273,8 @@ namespace PAL
 
 			ImGui_ImplVulkan_CreateFontsTexture();
 		}
+
+		m_HierarchyPanel.SetWorld(m_CurrentWorld);
 	}
 
 	void Editor::SetStyleLight()
@@ -498,7 +505,7 @@ namespace PAL
 
 	}
 
-	void Editor::OnRenderImGui(VulkanImage* image)
+	void Editor::RenderImGui(VulkanImage* image)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -580,7 +587,7 @@ namespace PAL
 
 				if (ImGui::MenuItem("Exit"))
 				{
-					Engine::Get()->Exit();
+					Engine::Get()->Stop();
 				}
 
 				ImGui::EndMenu();
@@ -588,6 +595,8 @@ namespace PAL
 
 			ImGui::EndMenuBar();
 		}
+
+		m_HierarchyPanel.ImGuiRender();
 
 		// Stats View
 		{
@@ -651,7 +660,7 @@ namespace PAL
 			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 			auto viewportOffset = ImGui::GetWindowPos();
 
-			m_ViewportSize = *ImGuiUtil::FastGlmConversion(&ImGui::GetContentRegionAvail());
+			m_ViewportSize = *((glm::vec2*)&ImGui::GetContentRegionAvail()); // same memory layout
 
 			if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
 			{
@@ -678,6 +687,7 @@ namespace PAL
 			ImGui::End();
 			ImGui::PopStyleVar();
 		}
+
 
 		ImGui::End();
 	}
@@ -772,7 +782,7 @@ namespace PAL
 		}
 	}
 
-	
+
 
 }
 

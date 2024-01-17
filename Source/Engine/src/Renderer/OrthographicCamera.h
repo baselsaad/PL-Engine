@@ -3,6 +3,7 @@
 
 namespace PAL
 {
+	struct MouseMoveEvent;
 
 	class OrthographicCamera : public Camera
 	{
@@ -26,6 +27,7 @@ namespace PAL
 	private:
 		float m_Zoom;
 		float m_CameraMoveSpeed = 5.0f;
+		glm::vec2 m_LastMousePos;
 	};
 
 }

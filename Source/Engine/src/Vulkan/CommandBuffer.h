@@ -1,9 +1,5 @@
 #pragma once
-#include "VulkanAPI.h"
-#include "VulkanRenderer.h"
 #include "Core/Engine.h"
-#include "Core/Window.h"
-
 
 namespace PAL
 {
@@ -32,6 +28,4 @@ namespace PAL
 		VkCommandPool m_CommandPool;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
 	};
-
-
 }

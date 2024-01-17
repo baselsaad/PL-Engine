@@ -59,7 +59,7 @@ public:
 
 		path << name << ".json";
 		m_OutputStream.open(path.str(), std::ios_base::out);
-		ASSERT(m_OutputStream.is_open(), "Can not find/open stream");
+		PAL_ASSERT(m_OutputStream.is_open(), "Can not find/open stream");
 
 		WriteHeader();
 		m_CurrentSession = new InstrumentationSession{ name };

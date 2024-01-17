@@ -1,5 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 namespace PAL
 {
@@ -34,6 +35,7 @@ namespace PAL
 
 		using EventFunc = std::function<void(Event& e)>;
 		virtual void SetupEventCallback(EventFunc&& callback) = 0;
+
 		virtual void Present() = 0;
 		virtual void PollEvents() = 0;
 		virtual void WaitEvents() = 0;

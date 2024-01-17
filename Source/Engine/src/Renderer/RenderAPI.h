@@ -2,8 +2,8 @@
 
 namespace PAL
 {
-	class VulkanVertexBuffer;
-	class VulkanIndexBuffer;
+	class VertexBuffer;
+	class IndexBuffer;
 
 	enum class PresentTarget
 	{
@@ -39,10 +39,10 @@ namespace PAL
 		FramebufferSpecification MainFrameBufferSpec = {}; // Main Scene Renderpass
 	};
 
-	class IRenderAPI
+	class RenderAPI
 	{
 	public:
-		virtual ~IRenderAPI() {}
+		virtual ~RenderAPI() {}
 
 		virtual void Init(const RenderApiSpec& spec) = 0;
 		virtual void Shutdown() = 0;
@@ -53,14 +53,25 @@ namespace PAL
 		virtual void BeginMainPass() = 0;
 		virtual void EndMainPass() = 0;
 
-		virtual void DrawQuad(const SharedPtr<VulkanVertexBuffer>& vertexBuffer, const SharedPtr<VulkanIndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) = 0; // delete Later
+		virtual void DrawQuad(const SharedPtr<VertexBuffer>& vertexBuffer, const SharedPtr<IndexBuffer>& indexBuffer, uint32_t indexCount, const glm::mat4& projection) = 0; // delete Later
 
 		virtual void WaitForIdle() = 0;
-		virtual void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0) = 0;
+		virtual void ResizeFrameBuffer(uint32_t width = 0, uint32_t height = 0) = 0;
 
 		virtual void SetVSync(bool vsync) = 0;
 
 		// Final Image from main framebuffer
 		virtual void* GetFinalImage(uint32_t index = 0) = 0;
+	};
+
+
+	class RenderAPIHelper
+	{
+	public:
+		static SharedPtr<VertexBuffer> CreateVertexBuffer(uint32_t size);
+		static SharedPtr<IndexBuffer> CreateIndexBuffer(void* data, uint32_t size);
+		
+		//TODO: convert this to Macro as Config
+		static const int RenderAPIHelper::GetFramesOnFlight();
 	};
 }

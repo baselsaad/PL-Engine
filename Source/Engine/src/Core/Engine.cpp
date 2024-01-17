@@ -57,17 +57,17 @@ namespace PAL
 
 	void Engine::Stop()
 	{
+		m_ShouldClose = true;
+	}
+
+	void Engine::Exit()
+	{
 		CORE_PROFILER_FUNC();
 
 		m_App->OnShutdown();
 		delete m_App;
 
 		m_Window->Close();
-	}
-
-	void Engine::Exit()
-	{
-		m_ShouldClose = true;
 	}
 
 	void Engine::SetVSync(bool vsync)
@@ -82,6 +82,11 @@ namespace PAL
 	const SharedPtr<RuntimeRenderer>& Engine::GetRuntimeRenderer()
 	{
 		return m_App->GetRuntimeRenderer();
+	}
+
+	RenderAPITarget Engine::GetCurrentRenderAPI()
+	{
+		return m_App->GetRuntimeRenderer()->GetRuntimeRendererSpec().TargetAPI;
 	}
 
 	const glm::vec2& Engine::GetViewportSize()

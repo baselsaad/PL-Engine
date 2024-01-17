@@ -1,7 +1,12 @@
 #include "pch.h"
 #include "VulkanFrameBuffer.h"
+
 #include "VulkanContext.h"
 #include "SwapChain.h"
+#include "VulkanMemoryAllocator.h"
+#include "VulkanRenderer.h"
+#include "VulkanDevice.h"
+
 #include "Event/Event.h"
 #include "Core/Engine.h"
 #include "Renderer/RuntimeRenderer.h"
@@ -57,9 +62,9 @@ namespace PAL
 			}
 		}
 
+		auto& swapChain = Engine::Get()->GetWindow()->GetSwapChain();
 		m_Spec.Width = width;
 		m_Spec.Height = height;
-		auto& swapChain = Engine::Get()->GetWindow()->GetSwapChain();
 
 		m_FramebufferImages.resize(VulkanAPI::GetMaxFramesInFlight());
 		m_ImageAllocations.resize(VulkanAPI::GetMaxFramesInFlight());

@@ -2,11 +2,15 @@
 #include "RuntimeRenderer.h"
 
 #include "RenderAPI.h"
-#include "Vulkan/VulkanRenderer.h"
 #include "Core/Engine.h"
+
+// Move to one .h
+#include "Vulkan/VulkanRenderer.h"
 #include "Vulkan/SwapChain.h"
+#include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanContext.h"
-#include "Vulkan/VertexBuffer.h"
+
+#include "VertexBuffer.h"
 #include "Utilities/Colors.h"
 #include "Utilities/Timer.h"
 #include "Map/ECS.h"
@@ -23,10 +27,8 @@ namespace PAL
 
 		switch (spec.TargetAPI)
 		{
-			case PAL::RenderAPITarget::Vulkan:	m_RenderAPI = NewShared<VulkanAPI>();		break;
-			case PAL::RenderAPITarget::Unknown:	ASSERT(false, "");							break;
-
-			default:							ASSERT(false, "");							break;
+			case PAL::RenderAPITarget::Vulkan:	m_RenderAPI = NewShared<VulkanAPI>(); break;
+			case PAL::RenderAPITarget::Unknown:	PAL_ASSERT(false, "");                break;
 		}
 
 		m_RenderAPI->Init(spec.ApiSpec);
@@ -37,7 +39,7 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		delete m_BatchRenderer;
 		m_RenderAPI->Shutdown();
@@ -47,35 +49,39 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		m_RenderAPI->BeginFrame();
 		m_BatchRenderer->Begin();
 	}
 
-	void RuntimeRenderer::Flush()
+	void RuntimeRenderer::DrawBatch()
 	{
 		CORE_PROFILER_FUNC();
 
 		// Quads
-		m_BatchRenderer->BindCurrentQuadBatch();
-
-		const auto& vertexBuffer = m_BatchRenderer->GetVertexBuffer();
-		uint32_t indexCount = m_BatchRenderer->GetIndexCount();
-
-		m_DrawCommandsQueue.Record([this, vertexBuffer, indexCount]()
 		{
-			m_RenderAPI->DrawQuad(vertexBuffer, m_BatchRenderer->GetIndexBuffer(), indexCount, m_Projection);
-		});
+			m_BatchRenderer->BindCurrentQuadBatch();
+
+			const auto& vertexBuffer = m_BatchRenderer->GetVertexBuffer();
+			uint32_t indexCount = m_BatchRenderer->GetQuadIndexCount();
+
+			m_DrawCommandsQueue.Record([this, vertexBuffer, indexCount] ()
+			{
+				m_RenderAPI->DrawQuad(vertexBuffer, m_BatchRenderer->GetQuadIndexBuffer(), indexCount, m_Projection);
+			});
+		}
+
+		
 	}
 
 	void RuntimeRenderer::EndFrame()
 	{
 		CORE_PROFILER_FUNC();
 
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		Flush();
+		DrawBatch();
 		m_RenderAPI->EndFrame();
 		m_BatchRenderer->End();
 	}
@@ -84,64 +90,50 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		s_RenderStats.DrawCalls = m_DrawCommandsQueue.GetCommandsCount();
 		s_RenderStats.DrawCommandsQueueUsage = m_DrawCommandsQueue.GetCommandsUsage();
 
 		m_RenderAPI->BeginMainPass();
 		{
-			m_DrawCommandsQueue.ExecuteAll();
-			m_DrawCommandsQueue.Clear();
+			m_DrawCommandsQueue.ExecuteAndClear();
 		}
 		m_RenderAPI->EndMainPass();
 	}
 
-	void RuntimeRenderer::DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)
-	{
-		CORE_PROFILER_FUNC();
-
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
-		if (m_BatchRenderer->ShouldDrawCurrentBatch())
-		{
-			Flush();
-			m_BatchRenderer->FindOrCreateNewQuadBatch();
-		}
-
-		glm::mat4 transform =
-			glm::translate(glm::mat4(1.0f), translation)
-			* glm::mat4(1.0f)
-			* glm::scale(glm::mat4(1.0f), scale);
-
-		m_BatchRenderer->AddQuadToBatch(transform, color);
-		s_RenderStats.Quads++;
-	}
-
 	void RuntimeRenderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color)
 	{
+		DrawQuad(transform.GetTransformMatrix(), color);
+	}
+
+	void RuntimeRenderer::DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color)
+	{
 		CORE_PROFILER_FUNC();
 
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 		if (m_BatchRenderer->ShouldDrawCurrentBatch())
 		{
-			Flush();
+			DrawBatch();
 			m_BatchRenderer->FindOrCreateNewQuadBatch();
 		}
 
-		m_BatchRenderer->AddQuadToBatch(transform.GetTransformMatrix(), color);
+		m_BatchRenderer->AddQuadToBatch(transformationMatrix, color);
 		s_RenderStats.Quads++;
 	}
 
 	void RuntimeRenderer::WaitForIdle()
 	{
-		ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
 		m_RenderAPI->WaitForIdle();
 	}
 
-	void RuntimeRenderer::ResizeFrameBuffer(bool resize, uint32_t width, uint32_t height)
+	void RuntimeRenderer::ResizeFrameBuffer(uint32_t width, uint32_t height)
 	{
-		m_RenderAPI->ResizeFrameBuffer(resize, width, height);
+		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
+
+		m_RenderAPI->ResizeFrameBuffer(width, height);
 	}
 
 	void* RuntimeRenderer::GetFinalImage(uint32_t index /*= 0*/)

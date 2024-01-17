@@ -30,9 +30,6 @@ private:
 	const char* m_Name;
 };
 
-/**
- * From: https://github.com/TheCherno/Hazel/blob/master/Hazel/src/Hazel/Debug/Instrumentor.h
- */
 #if defined (__FUNCSIG__)
 #define FUNC_NAME __FUNCSIG__
 #else

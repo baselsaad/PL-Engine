@@ -5,6 +5,7 @@ namespace PAL
 {
 	class RuntimeRenderer;
 	class World;
+	struct EngineArgs;
 
 	// must be inhirted by Editor, Standalone/Runtime App etc  
 	class EngineApplication
@@ -24,16 +25,6 @@ namespace PAL
 		SharedPtr<RuntimeRenderer> m_RuntimeRenderer;
 		SharedPtr<World> m_CurrentWorld;
 		glm::vec2 m_ViewportSize = { 0.0f,0.0f }; // this could be viewport in the editor or the whole window 
-	};
-
-	struct EngineArgs
-	{
-		int ArgumentsCount;
-		char** RawArgumentStrings;
-
-		EngineApplication* CurrentApp;
-		std::string AppName; //Debug
-		WindowData EngineWindowData;
 	};
 
 	EngineArgs ApplicationMain(int argc, char** argv);

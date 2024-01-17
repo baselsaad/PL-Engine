@@ -9,91 +9,14 @@
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
 #include "CommandBuffer.h"
-#include "VertexBuffer.h"
 #include "Utilities/Timer.h"
 
 
 namespace PAL
 {
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	//													VulkanMemoryAllocator							  																	      //
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-	VmaAllocator VulkanMemoryAllocator::s_Allocator;
-	uint64_t VulkanMemoryAllocator::s_TotalAllocatedBytes;
-
-	VulkanMemoryAllocator::VulkanMemoryAllocator(const char* name)
-		: m_Name(name)
-	{
-	}
-
-	//@TODO: Assert all parameters
-
-	void VulkanMemoryAllocator::Init(const SharedPtr<VulkanDevice>& device)
-	{
-		VmaAllocatorCreateInfo allocatorInfo = {};
-		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
-		allocatorInfo.physicalDevice = device->GetPhysicalDevice()->GetVkPhysicalDevice();
-		allocatorInfo.device = device->GetVkDevice();
-		allocatorInfo.instance = VulkanContext::GetVulkanInstance();
-
-		vmaCreateAllocator(&allocatorInfo, &s_Allocator);
-	}
-
-	void VulkanMemoryAllocator::Shutdown()
-	{
-		vmaDestroyAllocator(s_Allocator);
-	}
-
-	VmaAllocation VulkanMemoryAllocator::AllocateBuffer(VkBufferCreateInfo bufferCreateInfo, VmaMemoryUsage usage, VkBuffer& outBuffer)
-	{
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = usage;
-
-		VmaAllocation allocation;
-		VK_CHECK_RESULT(vmaCreateBuffer(s_Allocator, &bufferCreateInfo, &allocCreateInfo, &outBuffer, &allocation, nullptr));
-
-		VmaAllocationInfo allocInfo{};
-		vmaGetAllocationInfo(s_Allocator, allocation, &allocInfo);
-		s_TotalAllocatedBytes += allocInfo.size;
-
-		return allocation;
-	}
-
-	void VulkanMemoryAllocator::DestroyBuffer(VkBuffer buffer, VmaAllocation allocation)
-	{
-		vmaDestroyBuffer(s_Allocator, buffer, allocation);
-	}
-
-	void VulkanMemoryAllocator::DestroyImage(VkImage image, VmaAllocation allocation)
-	{
-		vmaDestroyImage(s_Allocator, image, allocation);
-	}
-
-	void VulkanMemoryAllocator::UnmapMemory(VmaAllocation allocation)
-	{
-		vmaUnmapMemory(s_Allocator, allocation);
-	}
-
-	VmaAllocation VulkanMemoryAllocator::AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage)
-	{
-		VmaAllocationCreateInfo allocCreateInfo = {};
-		allocCreateInfo.usage = usage;
-
-		VmaAllocation allocation;
-		vmaCreateImage(s_Allocator, &imageCreateInfo, &allocCreateInfo, &outImage, &allocation, nullptr);
-
-		VmaAllocationInfo allocInfo;
-		vmaGetAllocationInfo(s_Allocator, allocation, &allocInfo);
-
-		return allocation;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	//													VulkanUtilities							  																	      //
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
 	uint32_t VulkanUtilities::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 	{
 		auto phyDevice = VulkanContext::GetVulkanDevice()->GetPhysicalDevice()->GetVkPhysicalDevice();
@@ -109,7 +32,7 @@ namespace PAL
 			}
 		}
 
-		ASSERT(false, "failed to find suitable memory type!");
+		PAL_ASSERT(false, "failed to find suitable memory type!");
 	}
 
 	void VulkanUtilities::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const SharedPtr<CommandBuffer>& cmBuffer)
@@ -197,7 +120,7 @@ namespace PAL
 		}
 		else
 		{
-			ASSERT(false, "unsupported layout transition!");
+			PAL_ASSERT(false, "unsupported layout transition!");
 		}
 
 		vkCmdPipelineBarrier(

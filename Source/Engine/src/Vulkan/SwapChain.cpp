@@ -1,15 +1,18 @@
 #include "pch.h"
 #include "SwapChain.h"
+
 #include "VulkanDevice.h"
 #include "VulkanContext.h"
-#include "Core/Engine.h"
-#include <GLFW/glfw3.h>
-#include "RenderPass.h"
 #include "VulkanRenderer.h"
-#include "Renderer/RuntimeRenderer.h"
 #include "CommandBuffer.h"
-#include "Utilities/Timer.h"
 #include "VulkanFramebuffer.h"
+
+#include "Core/Engine.h"
+#include "RenderPass.h"
+#include "Renderer/RuntimeRenderer.h"
+#include "Utilities/Timer.h"
+
+#include <GLFW/glfw3.h>
 
 
 namespace PAL
@@ -85,7 +88,7 @@ namespace PAL
 
 		// Retrieving the swap chain images
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, nullptr);
-		ASSERT(imageCount >= VulkanAPI::MAX_FRAMES_IN_FLIGHT, "Your SwapChain does not support "+ std::to_string(VulkanAPI::MAX_FRAMES_IN_FLIGHT) +" FRAMES in Flight");
+		PAL_ASSERT(imageCount >= VulkanAPI::MAX_FRAMES_IN_FLIGHT, "Your SwapChain does not support {} FRAMES in Flight", VulkanAPI::MAX_FRAMES_IN_FLIGHT);
 
 		m_SwapChainImages.resize(imageCount);
 		vkGetSwapchainImagesKHR(m_Device->GetVkDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
@@ -175,8 +178,12 @@ namespace PAL
 					Instead of waiting for the next vertical blank, the image is transferred right away when it finally arrives. This may result in visible tearing.
 
 		*	VK_PRESENT_MODE_MAILBOX_KHR: This is another variation of the second mode.
-				Instead of blocking the application when the queue is full, the images that are already queued are simply replaced with the newer ones. This mode can be used to render frames as fast as possible while still avoiding tearing, resulting in fewer latency issues than standard vertical sync. This is commonly known as "triple buffering", although the existence of three buffers alone does not necessarily mean that the framerate is unlocked.
+				Instead of blocking the application when the queue is full, the images that are already queued are simply replaced with the newer ones. 
+				This mode can be used to render frames as fast as possible while still avoiding tearing, 
+				resulting in fewer latency issues than standard vertical sync. 
+				This is commonly known as "triple buffering", although the existence of three buffers alone does not necessarily mean that the framerate is unlocked.
 		*/
+
 		VkPresentModeKHR swapchainPresentMode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 		if (vsync)
 		{
@@ -238,7 +245,7 @@ namespace PAL
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
-			ASSERT(false, "failed to acquire swap chain image!");
+			PAL_ASSERT(false, "failed to acquire swap chain image!");
 		}
 
 		return m_ImageIndex;
@@ -295,7 +302,7 @@ namespace PAL
 	void VulkanSwapChain::RecreateSwapChain()
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-		
+
 		int width, height;
 		window->GetFramebufferSize(width, height);
 		while (width == 0 || height == 0)
@@ -351,7 +358,7 @@ namespace PAL
 		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore[m_CurrentFrame] };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
-	
+
 		{
 			CORE_PROFILER_SCOPE("GPU Frame");
 
@@ -376,7 +383,7 @@ namespace PAL
 		{
 			CORE_PROFILER_SCOPE("vkQueuePresentKHR");
 			result = vkQueuePresentKHR(m_Device->GetVkPresentQueue(), &presentInfo);
-			CHECK(result == VK_SUCCESS, "Failed to present Image");
+			PAL_CHECK(result == VK_SUCCESS, "Failed to present Image");
 		}
 
 		{
@@ -395,9 +402,9 @@ namespace PAL
 		m_CurrentFrame = (m_CurrentFrame + 1) % VulkanAPI::GetMaxFramesInFlight();
 	}
 
-	
 
 
-	
+
+
 
 }

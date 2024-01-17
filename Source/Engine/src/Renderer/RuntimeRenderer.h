@@ -1,11 +1,12 @@
 #pragma once
+#include "RenderAPI.h"
 #include "BatchRenderer.h"
 #include "Camera.h"
 #include "RenderingCommands.h"
 
 namespace PAL
 {
-	class IRenderAPI;
+	class RenderAPI;
 	class Camera;
 	class EditorCamera;
 	struct TransformComponent;
@@ -58,7 +59,6 @@ namespace PAL
 		void EndFrame();
 		void FlushDrawCommands();
 
-		void DrawQuad(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color = glm::vec4(0.5f, 1.0f, 0.0f,1.0f));// just for test
 		void DrawQuad(const TransformComponent& transform, const glm::vec4& color);// just for test
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
@@ -70,22 +70,23 @@ namespace PAL
 		}
 
 		void WaitForIdle();
-		void ResizeFrameBuffer(bool resize = false, uint32_t width = 0, uint32_t height = 0);
+		void ResizeFrameBuffer(uint32_t width = 0, uint32_t height = 0);
 		void* GetFinalImage(uint32_t index = 0);
 
 		void SetVSync(bool vsync);
 
 		inline static RenderStats& GetStats() { return s_RenderStats; }
-		inline SharedPtr<IRenderAPI>& GetRenderAPI() { return m_RenderAPI; }
+		inline SharedPtr<RenderAPI>& GetRenderAPI() { return m_RenderAPI; }
 		inline const RuntimeRendererSpecification& GetRuntimeRendererSpec () const { return m_RuntimeRendererSpecification; }
 	
 	private:
-		void Flush();
+		void DrawBatch();
+		void DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color);
 
 	private:
 		static RenderStats s_RenderStats;
 
-		SharedPtr<IRenderAPI> m_RenderAPI;
+		SharedPtr<RenderAPI> m_RenderAPI;
 		BatchRenderer* m_BatchRenderer;
 		CommandsQueue m_DrawCommandsQueue;
 

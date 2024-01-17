@@ -40,6 +40,8 @@ namespace PAL
 	private:
 		Registry m_RegisteredComponents;
 		SharedPtr<Camera> m_ActiveCamera;
+
+		friend class Entity;
 	};
 
 	

@@ -1,7 +1,10 @@
 #include "pch.h"
 #include "Input.h"
+
 #include "Core/Window.h"
 #include "Core/Engine.h"
+#include "GLFW/glfw3.h"
+
 
 namespace PAL
 {
@@ -10,7 +13,7 @@ namespace PAL
 	bool Input::IsKeyPressed(const KeyCode key)
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-		ASSERT(window, "No valid window!!");
+		PAL_ASSERT(window, "No valid window!!");
 
 		auto state = glfwGetKey(*window, static_cast<int32_t>(key));
 		return state == GLFW_PRESS;
@@ -19,7 +22,7 @@ namespace PAL
 	bool Input::IsMouseButtonDown(const MouseButtonKey key)
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-		ASSERT(window, "No valid window!!");
+		PAL_ASSERT(window, "No valid window!!");
 
 		auto state = glfwGetMouseButton(*window, (uint32_t)key);
 		return state == GLFW_PRESS;
@@ -28,7 +31,7 @@ namespace PAL
 	bool Input::IsMouseButtonUp(const MouseButtonKey key)
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-		ASSERT(window, "No valid window!!");
+		PAL_ASSERT(window, "No valid window!!");
 
 		auto state = glfwGetMouseButton(*window, (uint32_t)key);
 		return state == GLFW_RELEASE;
@@ -37,7 +40,7 @@ namespace PAL
 	glm::vec2 Input::GetMousePosition()
 	{
 		const UniquePtr<Window>& window = Engine::Get()->GetWindow();
-		ASSERT(window, "No valid window!!");
+		PAL_ASSERT(window, "No valid window!!");
 
 		double xPos, yPos;
 		glfwGetCursorPos(*window, &xPos, &yPos);

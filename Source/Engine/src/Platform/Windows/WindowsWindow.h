@@ -2,7 +2,6 @@
 #include "Core/Window.h"
 #include "Vulkan/SwapChain.h"
 
-
 namespace PAL
 {
 

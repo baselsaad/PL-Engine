@@ -73,7 +73,7 @@ namespace PAL
 		}
 		else
 		{
-			ASSERT(false, "Memory block not in the map!!");
+			PAL_ASSERT(false, "Memory block not in the map!!");
 		}
 
 		free(block);

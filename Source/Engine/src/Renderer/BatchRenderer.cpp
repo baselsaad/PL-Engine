@@ -1,32 +1,33 @@
 #include "pch.h"
 #include "BatchRenderer.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/VulkanRenderer.h"
-#include "Vulkan/IndexBuffer.h"
-#include "Vulkan/CommandBuffer.h"
-#include "Vulkan/VulkanContext.h"
-#include "RuntimeRenderer.h"
+
+#include "Renderer/VertexBuffer.h"
+#include "Renderer/IndexBuffer.h"
+#include "Renderer/RuntimeRenderer.h"
+
 #include "Utilities/Timer.h"
+#include "Core/Engine.h"
+#include "RenderAPI.h"
+
 
 namespace PAL
 {
 	BatchRenderer::BatchRenderer(const SharedPtr<CommandBuffer>& cmBuffer)
 	{
-		constexpr int framesInFlight = VulkanAPI::GetMaxFramesInFlight();
+		const int framesInFlight = RenderAPIHelper::GetFramesOnFlight();
 
-		m_QuadBatchingData.VertexBufferBase.resize(framesInFlight);
+		m_QuadVertexBufferBase = new QuadVertex[QuadBatch::s_MaxVertices];
 		for (uint32_t i = 0; i < framesInFlight; i++)
 		{
-			m_QuadBatchingData.VertexBufferBase[i] = new QuadVertex[m_QuadBatchingData.s_MaxVertices];
 
 			QuadBatch defaultBatch(i);
-			m_QuadBatchingData.BatchesArray[i].push_back(defaultBatch);
-			m_QuadBatchingData.CurrentBatch = 0;
+			m_QuadBatchesArray[i].push_back(defaultBatch);
+			m_QuadCurrentBatch = 0;
 		}
 
-		uint32_t* quadIndices = new uint32_t[m_QuadBatchingData.s_MaxIndices];
+		uint32_t* quadIndices = new uint32_t[QuadBatch::s_MaxIndices];
 		uint32_t offset = 0;
-		for (uint32_t i = 0; i < m_QuadBatchingData.s_MaxIndices; i += 6)
+		for (uint32_t i = 0; i < QuadBatch::s_MaxIndices; i += 6)
 		{
 			quadIndices[i + 0] = offset + 0;
 			quadIndices[i + 1] = offset + 1;
@@ -39,58 +40,59 @@ namespace PAL
 			offset += 4;
 		}
 
-		m_QuadBatchingData.IndexBuffer = NewShared<VulkanIndexBuffer>(cmBuffer, quadIndices, m_QuadBatchingData.s_MaxIndices * sizeof(uint32_t));
+		m_QuadIndexBuffer = RenderAPIHelper::CreateIndexBuffer(quadIndices, QuadBatch::s_MaxIndices * sizeof(uint32_t));
 		delete[] quadIndices;
 	}
 
 	BatchRenderer::~BatchRenderer()
 	{
-		constexpr int framesInFlight = VulkanAPI::GetMaxFramesInFlight();
+		const int framesInFlight = RenderAPIHelper::GetFramesOnFlight();
 
 		for (int frameIndex = 0; frameIndex < framesInFlight; frameIndex++)
 		{
-			std::vector<QuadBatch>& batches = m_QuadBatchingData.BatchesArray[frameIndex]; // Get Array of batches for this frame 
+			std::vector<QuadBatch>& batches = m_QuadBatchesArray[frameIndex]; // Get Array of batches for this frame 
 
+			// maybe let the destrctur do this ? 
 			for (QuadBatch& batch : batches)
 			{
-				batch.VertexBuffer->DestroyBuffer();
+				batch.VertexBufferRef->DestroyBuffer();
 			}
-
-			delete[] m_QuadBatchingData.VertexBufferBase[frameIndex];
 		}
 
-		m_QuadBatchingData.IndexBuffer->DestroyBuffer();
+		delete[] m_QuadVertexBufferBase;
+		m_QuadIndexBuffer->DestroyBuffer();
 	}
 
 	void BatchRenderer::Begin()
 	{
 		// reset every thing
-		m_QuadBatchingData.CurrentBatch = 0;
-		m_QuadBatchingData.IndexCount = 0;
-		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[Engine::Get()->GetWindow()->GetCurrentFrame()];
+		m_QuadCurrentBatch = 0;
+		m_QuadIndexCount = 0;
+		m_QuadVertexBufferPtr = m_QuadVertexBufferBase;
 	}
 
 	void BatchRenderer::End()
 	{
 		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
-		if (m_QuadBatchingData.CurrentBatch < m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch < size --> we do not use other batches
+		if (m_QuadCurrentBatch < m_QuadBatchesArray[currentFrame].size()) // current batch < size --> we do not use other batches
 		{
 			// we should destroy all buffers we do not need 
-			for (int batchIndex = m_QuadBatchingData.CurrentBatch + 1; batchIndex < m_QuadBatchingData.BatchesArray[currentFrame].size(); batchIndex++)
+			// this is important, so we can be sure that we have vertexbuffers only for the vertcies we need to render in the next frame
+			for (int batchIndex = m_QuadCurrentBatch + 1; batchIndex < m_QuadBatchesArray[currentFrame].size(); batchIndex++)
 			{
-				std::vector<QuadBatch>& currentFrameBatchesArray = m_QuadBatchingData.BatchesArray[currentFrame];
-				currentFrameBatchesArray[batchIndex].VertexBuffer->DestroyBuffer();
+				std::vector<QuadBatch>& currentFramem_QuadBatchesArray = m_QuadBatchesArray[currentFrame];
+				currentFramem_QuadBatchesArray[batchIndex].VertexBufferRef->DestroyBuffer();
 			}
 
 			// Resize only if necessary
-			if (m_QuadBatchingData.BatchesArray[currentFrame].size() > m_QuadBatchingData.CurrentBatch + 1)
+			if (m_QuadBatchesArray[currentFrame].size() > m_QuadCurrentBatch + 1)
 			{
-				m_QuadBatchingData.BatchesArray[currentFrame].resize(m_QuadBatchingData.CurrentBatch + 1);
+				m_QuadBatchesArray[currentFrame].resize(m_QuadCurrentBatch + 1);
 			}
 		}
 
-		RuntimeRenderer::GetStats().VertexBufferCount = m_QuadBatchingData.BatchesArray[currentFrame].size();
+		RuntimeRenderer::GetStats().VertexBufferCount = m_QuadBatchesArray[currentFrame].size();
 	}
 
 	void BatchRenderer::FindOrCreateNewQuadBatch()
@@ -99,14 +101,15 @@ namespace PAL
 
 		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
-		m_QuadBatchingData.IndexCount = 0;
-		m_QuadBatchingData.VertexBufferPtr = m_QuadBatchingData.VertexBufferBase[currentFrame];
+		// reset
+		m_QuadIndexCount = 0;
+		m_QuadVertexBufferPtr = m_QuadVertexBufferBase;
+		m_QuadCurrentBatch++;
 
-		m_QuadBatchingData.CurrentBatch++;
-		if (m_QuadBatchingData.CurrentBatch == m_QuadBatchingData.BatchesArray[currentFrame].size()) // current batch == size -> we do not have free batches -> create new 
+		if (m_QuadCurrentBatch == m_QuadBatchesArray[currentFrame].size()) // current batch == size -> we do not have free batches -> create new 
 		{
 			QuadBatch newBatch(currentFrame);
-			m_QuadBatchingData.BatchesArray[currentFrame].push_back(newBatch);
+			m_QuadBatchesArray[currentFrame].push_back(newBatch);
 		}
 	}
 
@@ -117,53 +120,35 @@ namespace PAL
 		constexpr size_t quadVertexCount = 4;
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{
-			m_QuadBatchingData.VertexBufferPtr->Pos = transform * m_QuadBatchingData.QuadVertexDefaultPositions[i];
-			m_QuadBatchingData.VertexBufferPtr->Color = color;
-			m_QuadBatchingData.VertexBufferPtr++;
+			m_QuadVertexBufferPtr->Pos = transform * QuadBatch::s_QuadVertexDefaultPositions[i];
+			m_QuadVertexBufferPtr->Color = color;
+			m_QuadVertexBufferPtr++;
 		}
 
-		m_QuadBatchingData.IndexCount += 6;
-	}
-
-	void BatchRenderer::AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color)//calculate TransformationMatrix in GPU 
-	{
-		CORE_PROFILER_FUNC();
-
-		//constexpr size_t quadVertexCount = 4;
-		//for (size_t i = 0; i < quadVertexCount; i++)
-		//{
-		//	m_QuadBatchingData.VertexBufferPtr->Pos = m_QuadBatchingData.QuadVertexDefaultPositions[i];
-		//	m_QuadBatchingData.VertexBufferPtr->Color = color;
-		//	m_QuadBatchingData.VertexBufferPtr->Translation = translation;
-		//	m_QuadBatchingData.VertexBufferPtr->Scale = scale;
-		//	m_QuadBatchingData.VertexBufferPtr++;
-		//}
-
-		//m_QuadBatchingData.IndexCount += 6;
+		m_QuadIndexCount += 6;
 	}
 
 	void BatchRenderer::BindCurrentQuadBatch()
 	{
 		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
-		uint32_t dataSize = (uint32_t)((uint8_t*)m_QuadBatchingData.VertexBufferPtr - (uint8_t*)m_QuadBatchingData.VertexBufferBase[currentFrame]);
+		uint32_t dataSize = (uint32_t)((uint8_t*)m_QuadVertexBufferPtr - (uint8_t*)m_QuadVertexBufferBase);
 
-		std::vector<QuadBatch>& currentFrameQuadBatches = m_QuadBatchingData.BatchesArray[currentFrame];//CurrentFrame ArrayOfBatches
-		QuadBatch& currentBatch = currentFrameQuadBatches[m_QuadBatchingData.CurrentBatch]; // Current_Batch in the Current_Frame
-
-		currentBatch.VertexBuffer->SetData(m_QuadBatchingData.VertexBufferBase[currentFrame], dataSize);
+		// Current_Batch in the Current_Frame
+		QuadBatch& currentBatch = m_QuadBatchesArray[currentFrame].at(m_QuadCurrentBatch);
+		currentBatch.VertexBufferRef->SetData(m_QuadVertexBufferBase, dataSize);
 	}
 
-	const SharedPtr<VulkanVertexBuffer>& BatchRenderer::GetVertexBuffer()
+	const SharedPtr<VertexBuffer>& BatchRenderer::GetVertexBuffer()
 	{
 		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
-		return m_QuadBatchingData.BatchesArray[currentFrame].at(m_QuadBatchingData.CurrentBatch).VertexBuffer;
+		return m_QuadBatchesArray[currentFrame].at(m_QuadCurrentBatch).VertexBufferRef;
 	}
 
 	QuadBatch::QuadBatch(int frameIndex /*= 0*/)
 		: FrameIndex(frameIndex)
 	{
-		VertexBuffer = NewShared<VulkanVertexBuffer>(BatchRenderer::BatchingData::s_MaxVertices * sizeof(QuadVertex));
+		VertexBufferRef = RenderAPIHelper::CreateVertexBuffer(s_MaxVertices * sizeof(QuadVertex));
 	}
 
 }

@@ -1,11 +1,10 @@
 #include "pch.h"
+#include "VulkanAPI.h"
 #include "VulkanContext.h"
-
+#include "VulkanDevice.h"
 
 #include <GLFW/glfw3.h>
 #include "Core/Engine.h"
-#include "VulkanDevice.h"
-#include "SwapChain.h"
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
 //	Static
@@ -29,11 +28,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityF
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 		Debug::LogError("validation layer: {0}\n", pCallbackData->pMessage);
-		//ASSERT(false, "");
+		//PAL_ASSERT(false, "");
 		break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
 		Debug::Critical("validation layer: {0}\n", pCallbackData->pMessage);
-		ASSERT(false, "");
+		PAL_ASSERT(false, "");
 		break;
 		default:
 		break;
@@ -84,7 +83,7 @@ namespace PAL
 
 	void VulkanContext::Init(void* windowHandle)
 	{
-		ASSERT(CheckValidationLayerSupport(), "validation layers requested, but not available!");
+		PAL_ASSERT(CheckValidationLayerSupport(), "validation layers requested, but not available!");
 
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

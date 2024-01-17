@@ -2,13 +2,24 @@
 #include "Window.h"
 #include "Event/EventHandler.h"
 #include "Utilities/DeltaTime.h"
-#include "Platform/PlatformEntry.h"
 
 namespace PAL
 {
 	class VulkanAPI;
 	class RuntimeRenderer;
+	class EngineApplication;
 	class World;
+	enum class RenderAPITarget;
+
+	struct EngineArgs
+	{
+		int ArgumentsCount;
+		char** RawArgumentStrings;
+
+		EngineApplication* CurrentApp;
+		std::string AppName; //Debug
+		WindowData EngineWindowData;
+	};
 
 	enum class EngineStates
 	{
@@ -18,25 +29,36 @@ namespace PAL
 	class Engine
 	{
 	public:
-		Engine() = default;
+		Engine() = delete;
+		Engine(const Engine&) = delete;
+		Engine(Engine&&) = delete;
+
 		Engine(const EngineArgs& engineArgs);
 		
 		inline static Engine* Get() { return s_Instance; }
 
 		// Start the engine main loop and load resources we need 
 		virtual void Run();
-		// Stop and free 
+		// Stop MainLoop
 		virtual void Stop();
-
+		// Stop and free 
 		virtual void Exit();
 
 		void SetVSync(bool vsync);
 
-		const SharedPtr<RuntimeRenderer>& GetRuntimeRenderer();
-
-		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
-		inline EventHandler& GetInputHandler() { return m_EventHandler; }
+		// Window&Viewport
 		const glm::vec2& GetViewportSize();
+		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
+
+		// Event
+		inline EventHandler& GetInputHandler() { return m_EventHandler; }
+
+		// DeltaTime
+		inline float GetDeltaTime() const { return m_DeltaTime.GetDeltaInSeconds(); }
+
+		// Runtime renderer
+		const SharedPtr<RuntimeRenderer>& GetRuntimeRenderer();
+		RenderAPITarget GetCurrentRenderAPI();  
 	private:
 		virtual void EngineLoop();
 		void OnEvent(Event& e);
