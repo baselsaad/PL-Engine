@@ -5,7 +5,7 @@
 #include "Editor.h"
 
 namespace PAL
-{
+{  
 	EngineArgs ApplicationMain(int argc, char** argv)
 	{
 		EngineArgs engineArgs = {};

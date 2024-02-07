@@ -21,6 +21,9 @@ namespace PAL
 		: m_Device(device)
 		, m_ImageIndex(0)
 		, m_CurrentFrame(0)
+		, m_SwapChain(VK_NULL_HANDLE)
+		, m_SwapChainImageFormat(VK_FORMAT_UNDEFINED)
+		, m_SwapChainExtent({ 0,0 })
 	{
 	}
 
@@ -336,7 +339,7 @@ namespace PAL
 
 		for (auto& callback : m_ResizeCallbacks)
 		{
-			callback(width, height);
+			callback(width, height, true);
 		}
 	}
 
@@ -393,7 +396,6 @@ namespace PAL
 			if (needRecreate)
 			{
 				RecreateSwapChain();
-
 				// reset
 				VulkanAPI::s_RecreateSwapChainRequested = false;
 			}

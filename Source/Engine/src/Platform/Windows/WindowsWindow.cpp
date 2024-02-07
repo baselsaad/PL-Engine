@@ -179,13 +179,13 @@ namespace PAL
 				{
 					case GLFW_PRESS:
 					{
-						MouseButtonPressedEvent event(button, outX, outY);
+						MouseButtonPressedEvent event(button, (float)outX, (float)outY);
 						eventCallback(event);
 						break;
 					}
 					case GLFW_RELEASE:
 					{
-						MouseButtonReleasedEvent event(button, outX, outY);
+						MouseButtonReleasedEvent event(button, (float)outX, (float)outY);
 						eventCallback(event);
 						break;
 					}

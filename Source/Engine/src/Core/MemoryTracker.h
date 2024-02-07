@@ -134,6 +134,9 @@ namespace PAL
 
 // no need to track placement new operator
 
+DISABLE_WARNING_PUSH
+DISABLE_WARNING(28252 28253)
+
 MY_NODISCARD MY_RET_NOTNULL MY_POST_WRITABLE_BYTE_SIZE(size) MY_VCRT_ALLOCATOR
 void* MY_CRTDECL operator new(size_t size);
 
@@ -153,3 +156,5 @@ void MY_CRTDECL operator delete(void* pointer, const std::nothrow_t&) noexcept;
 void MY_CRTDECL operator delete[](void* pointer) noexcept;
 void MY_CRTDECL operator delete[](void* pointer, const std::nothrow_t&) noexcept;
 
+
+DISABLE_WARNING_POP

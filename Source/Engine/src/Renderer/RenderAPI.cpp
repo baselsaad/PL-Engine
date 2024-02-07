@@ -21,6 +21,8 @@ namespace PAL
 			case RenderAPITarget::Vulkan:  return NewShared<VulkanVertexBuffer>(size);
 			case RenderAPITarget::Unknown: PAL_ASSERT(false, "");  return nullptr;
 		}
+
+		return nullptr;
 	}
 
 	SharedPtr<IndexBuffer> RenderAPIHelper::CreateIndexBuffer(void* data, uint32_t size)
@@ -32,6 +34,8 @@ namespace PAL
 			case RenderAPITarget::Vulkan:  return NewShared<VulkanIndexBuffer>(data, size);
 			case RenderAPITarget::Unknown: PAL_ASSERT(false, "");  return nullptr;
 		}
+
+		return nullptr;
 	}
 
 	const int RenderAPIHelper::GetFramesOnFlight()

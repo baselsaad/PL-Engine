@@ -23,7 +23,7 @@ namespace PAL
 		// @param obj - Object instance of ObjectType to bind the member function to
 		// @param memberFunction - Member function in ObjectType
 		template<typename ObjectType, typename EventType, typename DrivedFromEvent>
-		void BindAction(EventType eventType, ObjectType* obj, void (ObjectType::* memberFunction)(const DrivedFromEvent&))
+		void BindAction(EventType eventType, ObjectType* obj, void (ObjectType::* memberFunction)(const DrivedFromEvent&)) 
 		{
 			// Ensure that DrivedFromEvent is derived from the Event base class
 			static_assert(std::is_base_of<Event, DrivedFromEvent>::value, "Parameter type of the member function must be derived from Event!");

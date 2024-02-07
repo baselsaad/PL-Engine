@@ -60,7 +60,7 @@ namespace PAL
 
 	private:
 		uint8_t* m_Buffer;
-		uint32_t m_BufferSize;
+		size_t m_BufferSize;
 		uint32_t m_BufferUsed;
 		uint32_t m_TotalCommandsCount;
 	};

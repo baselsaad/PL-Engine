@@ -20,7 +20,7 @@ namespace PAL
 		, m_RenderPass(renderPass)
 		, m_Spec(spec)
 	{
-		Resize(spec.Width, spec.Height);
+		Resize(spec.Width, spec.Height, true);
 
 		if (spec.Target == PresentTarget::Swapchain)
 			Engine::Get()->GetWindow()->GetSwapChain()->BindResizeCallback(BIND_FUN(this, VulkanFramebuffer::Resize));
@@ -47,20 +47,10 @@ namespace PAL
 		}
 	}
 
-	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
+	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height, bool force /*= false*/)
 	{
-		VulkanMemoryAllocator allocator("FrameBuffer Image");
-		for (int i = 0; i < m_Framebuffers.size(); i++)
-		{
-			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
-
-			if (m_Spec.Target == PresentTarget::CustomViewport)
-			{
-				vkDestroyImageView(m_Device, m_FramebufferImages[i].ColorImageView, nullptr);
-				allocator.DestroyImage(m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
-				vkDestroySampler(m_Device, m_FramebufferImages[i].TextureSampler, nullptr);
-			}
-		}
+		if (!force && (m_Spec.Width == width || m_Spec.Height == height))
+			return;
 
 		auto& swapChain = Engine::Get()->GetWindow()->GetSwapChain();
 		m_Spec.Width = width;
@@ -68,30 +58,39 @@ namespace PAL
 
 		m_FramebufferImages.resize(VulkanAPI::GetMaxFramesInFlight());
 		m_ImageAllocations.resize(VulkanAPI::GetMaxFramesInFlight());
+		m_Framebuffers.resize(VulkanAPI::GetMaxFramesInFlight());
+
+		for (int i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
+		{
+			ResizeOnIndex(width, height, i);
+		}
+	}
+
+	void VulkanFramebuffer::ResizeOnIndex(uint32_t width, uint32_t height, int index)
+	{
+		VulkanMemoryAllocator allocator("FrameBuffer Image");
+		vkDestroyFramebuffer(m_Device, m_Framebuffers[index], nullptr);
+
+		if (m_Spec.Target == PresentTarget::CustomViewport)
+		{
+			vkDestroyImageView(m_Device, m_FramebufferImages[index].ColorImageView, nullptr);
+			allocator.DestroyImage(m_FramebufferImages[index].ColorImage, m_ImageAllocations[index]);
+			vkDestroySampler(m_Device, m_FramebufferImages[index].TextureSampler, nullptr);
+		}
 
 		if (m_Spec.Target == PresentTarget::Swapchain)
 		{
-			for (int i = 0; i < swapChain->GetSwapChainImageViews().size(); i++)
-			{
-				m_FramebufferImages[i].ColorImage = swapChain->GetSwapChainImages().at(i);
-				m_FramebufferImages[i].ColorImageView = swapChain->GetSwapChainImageViews().at(i);
-				m_FramebufferImages[i].ImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-			}
+			auto& swapChain = Engine::Get()->GetWindow()->GetSwapChain();
+			m_FramebufferImages[index].ColorImage = swapChain->GetSwapChainImages().at(index);
+			m_FramebufferImages[index].ColorImageView = swapChain->GetSwapChainImageViews().at(index);
+			m_FramebufferImages[index].ImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		}
 		else
 		{
-			CreateColorResources();
-			if (m_Spec.UseDepth)
-			{
-				CreateDepthResources();
-			}
+			CreateColorResources(index);
 		}
 
-		m_Framebuffers.resize(VulkanAPI::GetMaxFramesInFlight());
-		for (uint32_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
-		{
-			CreateFramebuffer(i);
-		}
+		CreateFramebuffer(index);
 	}
 
 	void VulkanFramebuffer::CreateFramebuffer(uint32_t index)
@@ -101,36 +100,27 @@ namespace PAL
 		std::array<VkImageView, 1> attachments;
 		attachments[0] = m_FramebufferImages[index].ColorImageView; // Color attachment
 
-		//if (m_Spec.useDepth)
-		//{
-		//	attachments[1] = m_DepthImageView; // Depth attachment
-		//}
-
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.attachmentCount = m_Spec.UseDepth ? 2 : 1;
+		framebufferInfo.attachmentCount = m_Spec.AttachmentCount;
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = m_Spec.Width;
 		framebufferInfo.height = m_Spec.Height;
 		framebufferInfo.layers = 1;
-
+		   
 		VK_CHECK_RESULT(vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_Framebuffers[index]));
 	}
 
-	void VulkanFramebuffer::CreateColorResources()
+	void VulkanFramebuffer::CreateColorResources(int index)
 	{
 		auto format = Engine::Get()->GetWindow()->GetSwapChain()->GetSwapChainImageFormat();
 
-		for (uint32_t i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
-		{
-			CreateImage(m_Spec.Width, m_Spec.Height, m_Spec.ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-						m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
+		CreateImage(m_Spec.Width, m_Spec.Height, m_Spec.ColorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				m_FramebufferImages[index].ColorImage, m_ImageAllocations[index]);
 
-			m_FramebufferImages[i].ColorImageView = CreateImageView(m_FramebufferImages[i].ColorImage, m_Spec.ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-		}
-
-		CreateTextureSampler();
+		m_FramebufferImages[index].ColorImageView = CreateImageView(m_FramebufferImages[index].ColorImage, m_Spec.ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		CreateTextureSampler(&m_FramebufferImages[index].TextureSampler);
 	}
 
 	void VulkanFramebuffer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
@@ -186,7 +176,7 @@ namespace PAL
 		return imageView;
 	}
 
-	void VulkanFramebuffer::CreateTextureSampler()
+	void VulkanFramebuffer::CreateTextureSampler(VkSampler* sampler)
 	{
 		VkSamplerCreateInfo samplerCreateInfo = {};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -205,10 +195,7 @@ namespace PAL
 		samplerCreateInfo.maxLod = 100.0f;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-		for (int i = 0; i < m_FramebufferImages.size(); i++)
-		{
-			VK_CHECK_RESULT(vkCreateSampler(VulkanContext::GetVulkanDevice()->GetVkDevice(), &samplerCreateInfo, nullptr, &m_FramebufferImages[i].TextureSampler));
-		}
+		VK_CHECK_RESULT(vkCreateSampler(VulkanContext::GetVulkanDevice()->GetVkDevice(), &samplerCreateInfo, nullptr, sampler));
 	}
 
 	void VulkanFramebuffer::CreateDepthResources()

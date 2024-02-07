@@ -24,7 +24,8 @@ namespace PAL
 		VulkanFramebuffer(VkRenderPass renderPass, const FramebufferSpecification& spec);
 		virtual ~VulkanFramebuffer();
 
-		void Resize(uint32_t width, uint32_t height);
+		void Resize(uint32_t width, uint32_t height, bool force = false);
+		void ResizeOnIndex(uint32_t width, uint32_t height, int index);
 		void Shutdown();
 
 		inline VkFramebuffer GetFramebuffer(uint32_t index) const { return m_Framebuffers[index]; };
@@ -44,13 +45,13 @@ namespace PAL
 
 	private:
 		void CreateFramebuffer(uint32_t index);
-		void CreateColorResources();
+		void CreateColorResources(int index);
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 			 VkImage& image, VmaAllocation& outAllocation);
 
 		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
-		void CreateTextureSampler();
+		void CreateTextureSampler(VkSampler* sampler);
 		void CreateDepthResources();
 
 		VkFormat FindDepthFormat();

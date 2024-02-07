@@ -21,7 +21,7 @@
 #include "Utilities/Timer.h"
 
 namespace PAL
-{
+{ 
 	bool VulkanAPI::s_RecreateSwapChainRequested = false;
 
 	void VulkanAPI::Init(const RenderApiSpec& spec)
@@ -45,7 +45,7 @@ namespace PAL
 		m_MainFrameBuffer->Shutdown();
 
 		VulkanMemoryAllocator::Shutdown();
-		
+
 	}
 
 	void VulkanAPI::WaitForIdle()
@@ -53,10 +53,9 @@ namespace PAL
 		vkDeviceWaitIdle(VulkanContext::GetVulkanDevice()->GetVkDevice());
 	}
 
-	void VulkanAPI::ResizeFrameBuffer(uint32_t width /*= 0*/, uint32_t height /*= 0*/)
+	void VulkanAPI::ResizeFrameBuffer(uint32_t width /*= 0*/, uint32_t height /*= 0*/, int frameIndex /*= -1*/)
 	{
-		if ((width > 0 && height > 0) &&
-			(width != m_MainFrameBuffer->GetSpecification().Width || height != m_MainFrameBuffer->GetSpecification().Height))
+		if (width > 0 && height > 0)
 		{
 			m_MainFrameBuffer->Resize(width, height);
 		}
@@ -70,6 +69,12 @@ namespace PAL
 	void* VulkanAPI::GetFinalImage(uint32_t index)
 	{
 		return m_MainFrameBuffer->GetFrameBufferImage(index);
+	}
+
+	void VulkanAPI::PushConstant(void* data,int size, ShaderStage stage)
+	{
+		// @TODO: handle the offset instead of hard coding
+		vkCmdPushConstants(m_Device->GetCurrentCommandBuffer(), m_Pipline->GetPipelineLayout(), (int)stage, sizeof(glm::mat4), size, data);
 	}
 
 	void VulkanAPI::BeginFrame()

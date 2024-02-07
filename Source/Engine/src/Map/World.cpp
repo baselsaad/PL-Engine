@@ -5,6 +5,7 @@
 #include "Renderer/OrthographicCamera.h"
 
 #include "Core/Engine.h"
+#include "Event/EventHandler.h"
 #include "Utilities/Colors.h"
 #include "Entity.h"
 #include "ECS.h"
@@ -33,6 +34,7 @@ namespace PAL
 	}
 
 	World::World()
+		: m_WorldName("DefaultWorld")
 	{
 	}
 
@@ -50,9 +52,9 @@ namespace PAL
 		CORE_PROFILER_FUNC();
 
 		Entity entityTest(this);
-		entityTest.SetColor(Colors::Orange);
+		entityTest.SetColor(Colors::Dark_Orange);
 		entityTest.GetComponent<TagComponent>().Tag = "OrangeEntity";
-
+		
 		Entity entityTest2(this);
 		entityTest2.SetColor(Colors::Blue);
 		entityTest2.GetTransform().Translation.x = 2.0f;
@@ -62,9 +64,13 @@ namespace PAL
 
 		if (m_ActiveCamera == nullptr)
 		{
-			m_ActiveCamera = NewShared<OrthographicCamera>(Engine::Get()->GetWindow()->GetAspectRatio());
-			m_ActiveCamera->SetupInput(Engine::Get()->GetInputHandler());
+			m_ActiveCamera = NewShared<OrthographicCamera>(5.0f, -1.0f, 1.0f);
 		}
+	}
+
+	void World::SetupInput(EventHandler& eventHandler)
+	{
+		m_ActiveCamera->SetupInput(eventHandler);
 	}
 
 	void World::OnUpdate(float deltaTime)
@@ -79,12 +85,12 @@ namespace PAL
 		CORE_PROFILER_FUNC();
 
 		m_ActiveCamera->OnUpdate(deltaTime);
-		Engine::Get()->GetRuntimeRenderer()->SetProjection(m_ActiveCamera->GetModellViewProjection());
+		Engine::Get()->GetRuntimeRenderer()->SetProjection(m_ActiveCamera->GetModelViewProjection());
 
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
 		for (auto [entity, transform, renderComponent] : view.each())
 		{
-			Engine::Get()->GetRuntimeRenderer()->DrawQuad(transform, renderComponent.GetColor());
+			Engine::Get()->GetRuntimeRenderer()->DrawQuad(transform, renderComponent.GetColor(), (uint32_t)entity + 100);
 		}
 	}
 

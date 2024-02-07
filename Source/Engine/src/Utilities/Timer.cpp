@@ -23,7 +23,7 @@ void Timer::StartTimer()
 void Timer::StopTimer() 
 {
 	m_End = std::chrono::high_resolution_clock::now();
-	PAL_ASSERT(m_IsTimerStarted, "You have to start the timer first!");
+	//PAL_ASSERT(m_IsTimerStarted, "You have to start the timer first!");
 
 	m_Duration = m_End - m_Start;
 	m_ElapsedTime = m_Duration.count() * 1000.0f;

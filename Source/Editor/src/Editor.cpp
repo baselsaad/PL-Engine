@@ -26,6 +26,11 @@
 #include "Map/World.h"
 #include "ImguiUtil.h"
 #include "Core/MemoryTracker.h"
+#include "Utilities/Colors.h"
+#include "Utilities/Ray.h"
+#include "Renderer/OrthographicCamera.h"
+#include "Event/Input.h"
+#include "glm/vector_relational.hpp"
 
 namespace PAL
 {
@@ -61,6 +66,7 @@ namespace PAL
 		mainFramebuffer.Width = Engine::Get()->GetWindow()->GetWindowWidth();
 		mainFramebuffer.Height = Engine::Get()->GetWindow()->GetWindowHeight();
 		mainFramebuffer.UseDepth = false;
+		mainFramebuffer.AttachmentCount = 1;
 		mainFramebuffer.Target = PresentTarget::CustomViewport;
 		mainFramebuffer.DebugName = "Main Framebuffer";
 
@@ -77,8 +83,20 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
+		auto& window = Engine::Get()->GetWindow();
+
+		m_RuntimeRenderer->ResizeFrameBuffer(window->GetWindowWidth(), window->GetWindowHeight());
+
 		if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
-			m_RuntimeRenderer->ResizeFrameBuffer(m_ViewportSize.x, m_ViewportSize.y);
+		{
+			// When viewport outside the window, it does not render !!
+			//m_RuntimeRenderer->ResizeFrameBuffer((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_CurrentWorld->GetActiveCamera().As<OrthographicCamera>()->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		}
+		else
+		{
+			m_CurrentWorld->GetActiveCamera().As<OrthographicCamera>()->SetViewportSize(window->GetWindowWidth(), window->GetWindowHeight());
+		}
 
 		m_RuntimeRenderer->StartFrame();
 
@@ -91,7 +109,7 @@ namespace PAL
 		{
 			CORE_PROFILER_SCOPE("RenderImGui");
 			BeginFrame();
-			RenderImGui((VulkanImage*)m_RuntimeRenderer->GetFinalImage(m_Swapchain->GetImageIndex()));
+			RenderImGui();
 			EndFrame();
 		}
 
@@ -203,6 +221,7 @@ namespace PAL
 		imguiSpec.Width = swapchain->GetSwapChainExtent().width;
 		imguiSpec.Height = swapchain->GetSwapChainExtent().height;
 		imguiSpec.UseDepth = false;
+		imguiSpec.AttachmentCount = 1;
 		imguiSpec.Target = PresentTarget::Swapchain;
 		imguiSpec.DebugName = "imgui Framebuffer";
 
@@ -219,7 +238,7 @@ namespace PAL
 		init_info.DescriptorPool = s_DescriptorPool;
 		init_info.Subpass = 0;
 		init_info.MinImageCount = 2;
-		init_info.ImageCount = swapchain->GetSwapChainImages().size();
+		init_info.ImageCount = (uint32_t)swapchain->GetSwapChainImages().size();
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		init_info.Allocator = nullptr;
 		init_info.CheckVkResultFn = nullptr;
@@ -230,7 +249,7 @@ namespace PAL
 
 		constexpr int framesInFlight = VulkanAPI::GetMaxFramesInFlight();
 		s_ImGuiCommandBuffers.resize(framesInFlight);
-		for (uint32_t i = 0; i < framesInFlight; i++)
+		for (int i = 0; i < framesInFlight; i++)
 		{
 			s_ImGuiCommandBuffers[i] = VulkanContext::GetVulkanDevice()->GetMainCommandBuffer()->CreateSecondaryCommandBuffer();
 		}
@@ -264,12 +283,12 @@ namespace PAL
 
 			io.FontDefault = regularFont;
 
-			m_ImGuiFonts.emplace(ImGuiFonts::Regular, regularFont);
-			m_ImGuiFonts.emplace(ImGuiFonts::Bold, boldFont);
-			m_ImGuiFonts.emplace(ImGuiFonts::Light, lightFont);
-			m_ImGuiFonts.emplace(ImGuiFonts::BoldItalic, boldItalicFont);
-			m_ImGuiFonts.emplace(ImGuiFonts::RegularItalic, regularItalicFont);
-			m_ImGuiFonts.emplace(ImGuiFonts::LightItalic, lightItalicFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::Regular, regularFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::Bold, boldFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::Light, lightFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::BoldItalic, boldItalicFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::RegularItalic, regularItalicFont);
+			//m_ImGuiFonts.emplace(ImGuiFonts::LightItalic, lightItalicFont);
 
 			ImGui_ImplVulkan_CreateFontsTexture();
 		}
@@ -419,6 +438,7 @@ namespace PAL
 
 		// Color Definitions
 		auto& colors = ImGui::GetStyle().Colors;
+		// TODO: global Array of colors 
 
 		// Text
 		colors[ImGuiCol_Text] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
@@ -462,10 +482,10 @@ namespace PAL
 		colors[ImGuiCol_ButtonHovered] = ImVec4(0.84f, 0.34f, 0.17f, 1.00f);
 		colors[ImGuiCol_ButtonActive] = ImVec4(0.59f, 0.24f, 0.12f, 1.00f);
 
-		// Headers 
-		colors[ImGuiCol_Header] = ImVec4(0.22f, 0.23f, 0.25f, 1.00f);
-		colors[ImGuiCol_HeaderHovered] = ImVec4(0.84f, 0.34f, 0.17f, 1.00f);
-		colors[ImGuiCol_HeaderActive] = ImVec4(0.59f, 0.24f, 0.12f, 1.00f);
+		// Headers
+		colors[ImGuiCol_Header] = Colors::Light_Black;
+		colors[ImGuiCol_HeaderHovered] = Colors::Light_Black;
+		colors[ImGuiCol_HeaderActive] = Colors::Light_Black;
 
 		// Separators
 		colors[ImGuiCol_Separator] = ImVec4(0.17f, 0.18f, 0.20f, 1.00f);
@@ -478,11 +498,11 @@ namespace PAL
 		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.59f, 0.24f, 0.12f, 1.00f);
 
 		// Tabs
-		colors[ImGuiCol_Tab] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-		colors[ImGuiCol_TabHovered] = ImVec4(0.84f, 0.34f, 0.17f, 1.00f);
-		colors[ImGuiCol_TabActive] = ImVec4(0.68f, 0.28f, 0.14f, 1.00f);
-		colors[ImGuiCol_TabUnfocused] = ImVec4(0.13f, 0.14f, 0.16f, 1.00f);
-		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.17f, 0.18f, 0.20f, 1.00f);
+		colors[ImGuiCol_Tab] = Colors::Light_Black;
+		colors[ImGuiCol_TabHovered] = Colors::Light_Black;
+		colors[ImGuiCol_TabActive] = Colors::Light_Black;
+		colors[ImGuiCol_TabUnfocused] = Colors::Light_Black;
+		colors[ImGuiCol_TabUnfocusedActive] = Colors::Light_Black;
 
 		// Docking
 		colors[ImGuiCol_DockingPreview] = ImVec4(0.19f, 0.20f, 0.22f, 1.00f);
@@ -505,7 +525,7 @@ namespace PAL
 
 	}
 
-	void Editor::RenderImGui(VulkanImage* image)
+	void Editor::RenderImGui()
 	{
 		CORE_PROFILER_FUNC();
 
@@ -558,6 +578,20 @@ namespace PAL
 
 		style.WindowMinSize.x = minWinSizeX;
 
+		//bool demoWindow = true;
+		//ImGui::ShowDemoWindow(&demoWindow);
+
+		RenderMenuBar();
+		m_HierarchyPanel.ImGuiRender();
+		RenderStatsPanel();
+		RenderSettingsPanel();
+		RenderViewport();
+
+		ImGui::End();
+	}
+
+	void Editor::RenderMenuBar()
+	{
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -595,101 +629,98 @@ namespace PAL
 
 			ImGui::EndMenuBar();
 		}
+	}
 
-		m_HierarchyPanel.ImGuiRender();
+	void Editor::RenderStatsPanel()
+	{
+		ImGui::Begin("Stats");
 
-		// Stats View
-		{
-			ImGui::Begin("Stats");
+		RenderStats& stats = RuntimeRenderer::GetStats();
+		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+		ImGui::Text("Quads: %d", stats.Quads);
+		ImGui::Text("VertexBufferCount: %d", stats.VertexBufferCount);
+		ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
+		ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
+		ImGui::Text("FPS: %d", stats.FramesPerSecond);
+		ImGui::Text("DrawCommandsQueue Usage: %d bytes", stats.DrawCommandsQueueUsage);
 
-			RenderStats& stats = RuntimeRenderer::GetStats();
-			ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-			ImGui::Text("Quads: %d", stats.Quads);
-			ImGui::Text("VertexBufferCount: %d", stats.VertexBufferCount);
-			ImGui::Text("FrameTime : %.4fs", stats.FrameTime);
-			ImGui::Text("FrameTime : %.4fms", stats.FrameTime_ms);
-			ImGui::Text("FPS: %d", stats.FramesPerSecond);
-			ImGui::Text("DrawCommandsQueue Usage: %d bytes", stats.DrawCommandsQueueUsage);
+		ImGui::NewLine();
+		ImGui::Text("MemoryUsage: %.5f mb", AllocationTracker::GetCurrentUsage());
+		ImGui::Text("TotalAllocted: %.5f mb", AllocationTracker::GetTotalAllocated());
+		ImGui::Text("TotalFreed: %.5f mb", AllocationTracker::GetTotalFreed());
 
-			ImGui::NewLine();
-			ImGui::Text("MemoryUsage: %.5f mb", AllocationTracker::GetCurrentUsage());
-			ImGui::Text("TotalAllocted: %.5f mb", AllocationTracker::GetTotalAllocated());
-			ImGui::Text("TotalFreed: %.5f mb", AllocationTracker::GetTotalFreed());
-
-			ImGui::End();
-		}
-
-		// Settings View
-		{
-			ImGui::Begin("Settings");
-			auto& window = Engine::Get()->GetWindow();
-
-			bool vsync = window->IsVsyncOn();
-			if (ImGui::Checkbox("VSync", &vsync))
-			{
-				Engine::Get()->SetVSync(vsync);
-			}
-
-			static bool s_LightTheme = false;
-			if (ImGui::Checkbox("Light Mode!", &s_LightTheme))
-			{
-				if (s_LightTheme)
-				{
-					ImGui::StyleColorsLight();
-					SetStyleLight();
-				}
-				else
-				{
-					ImGui::StyleColorsDark();
-					SetStyleDark();
-				}
-			}
-
-			ImGui::End();
-		}
-
-		// World Viewport
-		{
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-
-			ImGui::PushFont(GetFont(ImGuiFonts::BoldItalic));
-			ImGui::Begin("Viewport");
-			ImGui::PopFont();
-
-			auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-			auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-			auto viewportOffset = ImGui::GetWindowPos();
-
-			m_ViewportSize = *((glm::vec2*)&ImGui::GetContentRegionAvail()); // same memory layout
-
-			if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
-			{
-				if (m_MainViewportTexID != VK_NULL_HANDLE)
-				{
-					ImGui_ImplVulkan_RemoveTexture(m_MainViewportTexID);
-					m_MainViewportTexID = VK_NULL_HANDLE;
-				}
-
-				m_MainViewportTexID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-				ImGui::Image(m_MainViewportTexID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y });
-			}
-
-			if (ImGui::BeginDragDropTarget())
-			{
-				//if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-				//{
-				//	const wchar_t* path = (const wchar_t*)payload->Data;
-				//	OpenScene(std::filesystem::path(g_AssetPath) / path);
-				//}
-				ImGui::EndDragDropTarget();
-			}
-
-			ImGui::End();
-			ImGui::PopStyleVar();
-		}
-
+		ImGui::NewLine();
+		ImGui::Text("Editor Camera: %f, %f", m_CurrentWorld->GetActiveCamera()->GetPosition().x, m_CurrentWorld->GetActiveCamera()->GetPosition().y);
 
 		ImGui::End();
+	}
+
+	void Editor::RenderSettingsPanel()
+	{
+		ImGui::Begin("Settings");
+		auto& window = Engine::Get()->GetWindow();
+
+		bool vsync = window->IsVsyncOn();
+		if (ImGui::Checkbox("VSync", &vsync))
+		{
+			Engine::Get()->SetVSync(vsync);
+		}
+
+		static bool s_LightTheme = false;
+		if (ImGui::Checkbox("Light Mode!", &s_LightTheme))
+		{
+			if (s_LightTheme)
+			{
+				ImGui::StyleColorsLight();
+				SetStyleLight();
+			}
+			else
+			{
+				ImGui::StyleColorsDark();
+				SetStyleDark();
+			}
+		}
+
+		ImGui::End();
+	}
+
+	void Editor::RenderViewport()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
+
+		ImGui::PushFont(GetFont(ImGuiFonts::BoldItalic));
+		ImGui::Begin("Viewport");
+		ImGui::PopFont();
+
+		m_ViewportSize = *((glm::vec2*)&ImGui::GetContentRegionAvail()); // same memory layout
+		m_ViewportPosition = ImGui::GetCursorScreenPos();
+
+		auto windowSize = ImGui::GetWindowSize();
+		ImVec2 minBound = ImGui::GetWindowPos();
+
+		auto viewportOffset = ImGui::GetCursorPos(); // includes tab bar
+		minBound.x -= viewportOffset.x;
+		minBound.y -= viewportOffset.y;
+
+		ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
+		m_ViewportBound[0] = { minBound.x, minBound.y };
+		m_ViewportBound[1] = { maxBound.x, maxBound.y };
+
+		if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
+		{
+			if (m_MainViewportTexID != VK_NULL_HANDLE)
+			{
+				ImGui_ImplVulkan_RemoveTexture(m_MainViewportTexID);
+				m_MainViewportTexID = VK_NULL_HANDLE;
+			}
+
+			VulkanImage* image = (VulkanImage*)m_RuntimeRenderer->GetFinalImage(m_Swapchain->GetImageIndex());
+			m_MainViewportTexID = ImGui_ImplVulkan_AddTexture(image->TextureSampler, image->ColorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			ImGui::Image(m_MainViewportTexID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, { 0, 1 }, { 1, 0 }, ImVec4(1, 1, 1, 1), ImVec4(0, 0, 0, 0));
+		}
+
+		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	void Editor::BeginFrame()
@@ -782,7 +813,75 @@ namespace PAL
 		}
 	}
 
+	static bool IsMouseWithinPanel(const ImVec2& mousePos, const ImVec2& panelPos, const glm::vec2& panelSize)
+	{
+		return mousePos.x >= panelPos.x && mousePos.x <= panelPos.x + panelSize.x &&
+			mousePos.y >= panelPos.y && mousePos.y <= panelPos.y + panelSize.y;
+	}
 
+	glm::vec2 Editor::GetMousePosRelativeViewport(const ImVec2& imguiMousePos, const ImVec2& viewportPos)
+	{
+		glm::vec2 result;
+		result.x = ImGui::GetMousePos().x - viewportPos.x;
+		result.y = ImGui::GetMousePos().y - viewportPos.y;
+
+		return result;
+	}
+
+	static bool PointInsideAABB(const glm::vec3& point, const AABB& aabb)
+	{
+		//return point.x >= aabb.Min.x && point.x <= aabb.Max.x &&
+		//	point.y >= aabb.Min.y && point.y <= aabb.Max.y &&
+		//	point.z >= aabb.Min.z && point.z <= aabb.Max.z;
+
+		//vectorized comparison
+		glm::bvec3 inside = glm::greaterThanEqual(point, aabb.Min) && glm::lessThanEqual(point, aabb.Max);
+		
+		// Check if all components are inside the AABB
+		return inside.x && inside.y && inside.z;
+	}
+
+	void Editor::OnMousePressed(const MouseButtonPressedEvent& mouseEvent)
+	{
+		CORE_PROFILER_FUNC();
+
+		ImVec2 mousePos = ImGui::GetMousePos();
+		glm::vec2 relativeMousePos = GetMousePosRelativeViewport(mousePos, m_ViewportPosition);
+
+		if (relativeMousePos.x < 0 || relativeMousePos.x > m_ViewportSize.x
+			|| relativeMousePos.y < 0 || relativeMousePos.y > m_ViewportSize.y)
+		{
+			//Debug::LogWarn("Outside viewport");
+			return;
+		}
+
+		auto& camera = m_CurrentWorld->GetActiveCamera();
+		glm::vec3 worldPos = camera->ScreenPosToWorld(relativeMousePos, m_ViewportSize);
+
+		Entity selectedEntity{};
+		m_CurrentWorld->GetRegisteredComponents().view<TransformComponent>().each([&](auto entityId, const TransformComponent& transform)
+		{
+			AABB quadAABB;
+			quadAABB.Min = QuadBatch::CalculateAABBMin(transform.GetTransformMatrix());
+			quadAABB.Max = QuadBatch::CalculateAABBMax(transform.GetTransformMatrix());
+
+			if (PointInsideAABB(worldPos, quadAABB))
+			{
+				selectedEntity.SetEntityId(entityId);
+				selectedEntity.SetWorld(m_CurrentWorld.StdSharedPtr.get());
+				return;
+			}
+		});
+
+		m_HierarchyPanel.SetSelectedEntity(selectedEntity);
+	}
+
+	void Editor::SetupInput(EventHandler& eventHandler)
+	{
+		m_CurrentWorld->SetupInput(eventHandler);
+
+		eventHandler.BindAction(EventType::MouseButtonPressed, this, &Editor::OnMousePressed);
+	}
 
 }
 

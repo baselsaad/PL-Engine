@@ -12,12 +12,12 @@
 
 namespace PAL
 {
-	BatchRenderer::BatchRenderer(const SharedPtr<CommandBuffer>& cmBuffer)
+	BatchRenderer::BatchRenderer()
 	{
 		const int framesInFlight = RenderAPIHelper::GetFramesOnFlight();
 
-		m_QuadVertexBufferBase = new QuadVertex[QuadBatch::s_MaxVertices];
-		for (uint32_t i = 0; i < framesInFlight; i++)
+		m_QuadVertexBuffer = new QuadVertex[QuadBatch::s_MaxVertices];
+		for (int i = 0; i < framesInFlight; i++)
 		{
 
 			QuadBatch defaultBatch(i);
@@ -41,7 +41,7 @@ namespace PAL
 		}
 
 		m_QuadIndexBuffer = RenderAPIHelper::CreateIndexBuffer(quadIndices, QuadBatch::s_MaxIndices * sizeof(uint32_t));
-		delete[] quadIndices;
+		delete[] quadIndices; // After uploading the data to GPU 
 	}
 
 	BatchRenderer::~BatchRenderer()
@@ -59,7 +59,7 @@ namespace PAL
 			}
 		}
 
-		delete[] m_QuadVertexBufferBase;
+		delete[] m_QuadVertexBuffer;
 		m_QuadIndexBuffer->DestroyBuffer();
 	}
 
@@ -68,7 +68,7 @@ namespace PAL
 		// reset every thing
 		m_QuadCurrentBatch = 0;
 		m_QuadIndexCount = 0;
-		m_QuadVertexBufferPtr = m_QuadVertexBufferBase;
+		m_QuadVerticesCount = 0;
 	}
 
 	void BatchRenderer::End()
@@ -103,7 +103,7 @@ namespace PAL
 
 		// reset
 		m_QuadIndexCount = 0;
-		m_QuadVertexBufferPtr = m_QuadVertexBufferBase;
+		m_QuadVerticesCount = 0;
 		m_QuadCurrentBatch++;
 
 		if (m_QuadCurrentBatch == m_QuadBatchesArray[currentFrame].size()) // current batch == size -> we do not have free batches -> create new 
@@ -112,7 +112,7 @@ namespace PAL
 			m_QuadBatchesArray[currentFrame].push_back(newBatch);
 		}
 	}
-
+	 
 	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec4& color)
 	{
 		CORE_PROFILER_FUNC();
@@ -120,9 +120,9 @@ namespace PAL
 		constexpr size_t quadVertexCount = 4;
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{
-			m_QuadVertexBufferPtr->Pos = transform * QuadBatch::s_QuadVertexDefaultPositions[i];
-			m_QuadVertexBufferPtr->Color = color;
-			m_QuadVertexBufferPtr++;
+			m_QuadVertexBuffer[m_QuadVerticesCount].Pos = transform * QuadBatch::s_QuadVertexDefaultPositions[i];
+			m_QuadVertexBuffer[m_QuadVerticesCount].Color = color;
+			m_QuadVerticesCount++;
 		}
 
 		m_QuadIndexCount += 6;
@@ -132,11 +132,11 @@ namespace PAL
 	{
 		int currentFrame = Engine::Get()->GetWindow()->GetCurrentFrame();
 
-		uint32_t dataSize = (uint32_t)((uint8_t*)m_QuadVertexBufferPtr - (uint8_t*)m_QuadVertexBufferBase);
+		uint32_t dataSize = m_QuadVerticesCount * sizeof(QuadVertex);
 
 		// Current_Batch in the Current_Frame
 		QuadBatch& currentBatch = m_QuadBatchesArray[currentFrame].at(m_QuadCurrentBatch);
-		currentBatch.VertexBufferRef->SetData(m_QuadVertexBufferBase, dataSize);
+		currentBatch.VertexBufferRef->SetData(m_QuadVertexBuffer , dataSize);
 	}
 
 	const SharedPtr<VertexBuffer>& BatchRenderer::GetVertexBuffer()

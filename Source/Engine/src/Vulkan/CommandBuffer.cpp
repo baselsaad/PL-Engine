@@ -11,7 +11,7 @@
 #include "VulkanIndexBuffer.h"
 
 namespace PAL
-{
+{ 
 	CommandBuffer::CommandBuffer()
 	{
 		CreateCommandPool();

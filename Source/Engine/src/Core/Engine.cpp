@@ -41,6 +41,7 @@ namespace PAL
 		m_Window->SetupEventCallback(BIND_FUN(this, Engine::OnEvent));
 
 		m_App->Init();
+		m_App->SetupInput(m_EventHandler);
 	}
 
 	void Engine::Run()

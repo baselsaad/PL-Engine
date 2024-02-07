@@ -33,6 +33,7 @@ namespace PAL
 		}
 
 		PAL_ASSERT(false, "failed to find suitable memory type!");
+		return 0;
 	}
 
 	void VulkanUtilities::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const SharedPtr<CommandBuffer>& cmBuffer)

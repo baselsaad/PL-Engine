@@ -228,7 +228,7 @@ namespace PAL
 	public:
 		using Super = MouseButtonEvent;
 
-		MouseButtonEvent(int button, double x, double y)
+		MouseButtonEvent(int button, float x, float y)
 			: m_XPosition(x)
 			, m_YPosition(y)
 		{
@@ -248,21 +248,21 @@ namespace PAL
 
 		inline MouseButtonKey GetButtonType() { return m_ButtonType; }
 
-		inline double GetXPosition() const { return m_XPosition; }
+		inline float GetXPosition() const { return m_XPosition; }
 
 		// from BOTTOM_LEFT not TOP_LEFT
-		inline double GetYPosition() const { return m_YPosition; }
+		inline float GetYPosition() const { return m_YPosition ; }
 
 	private:
 		MouseButtonKey m_ButtonType;
-		double m_XPosition;
-		double m_YPosition;
+		float m_XPosition;
+		float m_YPosition;
 	};
 
 	class MouseButtonPressedEvent : public MouseButtonEvent
 	{
 	public:
-		MouseButtonPressedEvent(int btn, double x, double y)
+		MouseButtonPressedEvent(int btn, float x, float y)
 			: Super(btn, x, y)
 		{
 		}
@@ -277,7 +277,7 @@ namespace PAL
 	{
 
 	public:
-		MouseButtonReleasedEvent(int btn, double x, double y)
+		MouseButtonReleasedEvent(int btn, float x, float y)
 			: Super(btn, x, y)
 		{
 		}
@@ -315,7 +315,7 @@ namespace PAL
 	class MouseScrolledEvent : public Event
 	{
 	public:
-		MouseScrolledEvent(double xPos, double yPos)
+		MouseScrolledEvent(float xPos, float yPos)
 			: m_XPosition(xPos)
 			, m_YPosition(yPos)
 		{

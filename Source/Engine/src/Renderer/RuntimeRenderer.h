@@ -26,10 +26,10 @@ namespace PAL
 
 	struct RenderStats
 	{
-		uint32_t Quads = 0;
-		uint32_t DrawCalls = 0;
-		uint32_t VertexBufferCount = 0;
-		uint32_t DrawCommandsQueueUsage = 0;
+		size_t Quads = 0;
+		size_t DrawCalls = 0;
+		size_t VertexBufferCount = 0;
+		size_t DrawCommandsQueueUsage = 0;
 		
 
 		float FrameTime = 0.0f;
@@ -59,7 +59,7 @@ namespace PAL
 		void EndFrame();
 		void FlushDrawCommands();
 
-		void DrawQuad(const TransformComponent& transform, const glm::vec4& color);// just for test
+		void DrawQuad(const TransformComponent& transform, const glm::vec4& color, uint32_t entityID = -1);// just for test
 
 		void SetProjection(const glm::mat4& projection) { m_Projection = projection; }
 
@@ -70,7 +70,7 @@ namespace PAL
 		}
 
 		void WaitForIdle();
-		void ResizeFrameBuffer(uint32_t width = 0, uint32_t height = 0);
+		void ResizeFrameBuffer(uint32_t width = 0, uint32_t height = 0, int frameIndex = -1);
 		void* GetFinalImage(uint32_t index = 0);
 
 		void SetVSync(bool vsync);
@@ -81,13 +81,13 @@ namespace PAL
 	
 	private:
 		void DrawBatch();
-		void DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color);
+		void DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color, uint32_t entityID);
 
 	private:
 		static RenderStats s_RenderStats;
 
 		SharedPtr<RenderAPI> m_RenderAPI;
-		BatchRenderer* m_BatchRenderer;
+		BatchRenderer* m_BatchRenderer = nullptr;
 		CommandsQueue m_DrawCommandsQueue;
 
 		RuntimeRendererSpecification m_RuntimeRendererSpecification;

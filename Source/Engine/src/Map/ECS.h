@@ -1,8 +1,5 @@
 #pragma once
 
-#include <entt/entt.hpp>
-#include "glm/gtx/quaternion.hpp"
-
 namespace PAL
 {
 	using Registry = entt::registry;

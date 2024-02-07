@@ -51,7 +51,7 @@ namespace PAL
 		inline const UniquePtr<Window>& GetWindow() const { return m_Window; }
 
 		// Event
-		inline EventHandler& GetInputHandler() { return m_EventHandler; }
+		inline EventHandler& GetEventHandler() { return m_EventHandler; }
 
 		// DeltaTime
 		inline float GetDeltaTime() const { return m_DeltaTime.GetDeltaInSeconds(); }

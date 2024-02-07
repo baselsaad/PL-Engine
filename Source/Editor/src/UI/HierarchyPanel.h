@@ -10,9 +10,10 @@ namespace PAL
 		HierarchyPanel(const SharedPtr<World>& world);
 
 		void ImGuiRender();
-		void DrawEntityHierarchy(Entity& entity);
+		void DrawEntityHierarchy(Entity& entity, int openAction);
+		void DrawComponents(Entity& entity);
 
-
+		inline void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }
 		inline void SetWorld(const SharedPtr<World>& world) { m_World = world; }
 
 	private:

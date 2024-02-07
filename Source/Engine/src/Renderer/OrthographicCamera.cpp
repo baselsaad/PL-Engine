@@ -9,17 +9,21 @@
 
 namespace PAL
 {
-	OrthographicCamera::OrthographicCamera(float aspectratio)
-		: Camera(aspectratio)
-		, m_Zoom(1.0f)
+	OrthographicCamera::OrthographicCamera(float size, float nearClip /*= -1.0f*/, float farClip /*= 1.0f*/)
+		: Camera(16.0f / 9.0f)
+		, m_OrthographicSize(size)
+		, m_OrthographicNear(nearClip)
+		, m_OrthographicFar(farClip)
 		, m_LastMousePos(0.0f)
 	{
-		SetAspectRatio(aspectratio);
+		float orthoWidth = m_OrthographicSize * m_AspectRatio;
+		float orthoHeight = m_OrthographicSize;
+
+		SetOrthoProjectionBounds(orthoWidth, orthoHeight, m_OrthographicNear, m_OrthographicFar);
 	}
 
 	void OrthographicCamera::OnUpdate(float deltaTime)
 	{
-
 		if (Input::IsKeyPressed(KeyCode::A))
 		{
 			m_CameraPosition.x -= m_CameraMoveSpeed * deltaTime;
@@ -31,11 +35,11 @@ namespace PAL
 
 		if (Input::IsKeyPressed(KeyCode::W))
 		{
-			m_CameraPosition.y -= m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y += m_CameraMoveSpeed * deltaTime;
 		}
 		else if (Input::IsKeyPressed(KeyCode::S))
 		{
-			m_CameraPosition.y += m_CameraMoveSpeed * deltaTime;
+			m_CameraPosition.y -= m_CameraMoveSpeed * deltaTime;
 		}
 
 		CalculateViewProjectionMatrix();
@@ -50,15 +54,19 @@ namespace PAL
 	void OrthographicCamera::CalculateViewProjectionMatrix()
 	{
 		m_ViewTransformation = glm::lookAt(m_CameraPosition, m_CameraPosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		m_Mvp = m_ModelTransformation * m_ViewTransformation;
+
+		m_Mvp = m_ProjectionMatrix * m_ViewTransformation;
 	}
 
 	void OrthographicCamera::OnMouseScroll(const MouseScrolledEvent& e)
 	{
-		m_Zoom -= e.GetYOffset() * 0.25f;
-		m_Zoom = glm::max(m_Zoom, 0.25f);
+		m_OrthographicSize -= e.GetYOffset() * 0.25f;
+		m_OrthographicSize = glm::max(m_OrthographicSize, 0.25f);
 
-		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		float orthoWidth = m_OrthographicSize * m_AspectRatio;
+		float orthoHeight = m_OrthographicSize;
+
+		SetOrthoProjectionBounds(orthoWidth, orthoHeight, m_OrthographicNear, m_OrthographicFar);
 	}
 
 	void OrthographicCamera::OnResizeWindow(const ResizeWindowEvent& e)
@@ -66,15 +74,20 @@ namespace PAL
 		SetAspectRatio((float)e.GetWidth() / (float)e.GetHeight());
 	}
 
-	void OrthographicCamera::SetAspectRatio(float aspectRatio)
+	void OrthographicCamera::SetOrthoProjectionBounds(const float width, const float height, const float nearP, const float farP)
 	{
-		m_AspectRatio = aspectRatio;
-		SetOrthoProjectionBounds(-m_AspectRatio * m_Zoom, m_AspectRatio * m_Zoom, -m_Zoom, m_Zoom);
+		m_ProjectionMatrix = glm::ortho(-width , width , -height , height , nearP, farP);
+
+		m_Mvp = m_ProjectionMatrix * m_ViewTransformation;
 	}
 
-	void OrthographicCamera::SetOrthoProjectionBounds(float left, float right, float bottom, float top)
+	void OrthographicCamera::SetViewportSize(uint32_t width, uint32_t height)
 	{
-		m_ModelTransformation = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
-		m_Mvp = m_ModelTransformation * m_ViewTransformation;
+		m_AspectRatio = (float)width / (float)height;
+		float orthoWidth = m_OrthographicSize * m_AspectRatio;
+		float orthoHeight = m_OrthographicSize;
+
+		SetOrthoProjectionBounds(orthoWidth, orthoHeight, m_OrthographicNear, m_OrthographicFar);
 	}
+
 }

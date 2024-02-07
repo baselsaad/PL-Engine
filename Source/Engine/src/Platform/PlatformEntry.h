@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Window.h"
+#include "Event/EventHandler.h"
 
 namespace PAL
 {
@@ -13,7 +14,9 @@ namespace PAL
 	public:
 		virtual ~EngineApplication() {}
 
+
 		virtual void Init() = 0;
+		virtual void SetupInput(EventHandler& eventHandler) = 0;
 		virtual void OnUpdate(float deltaTime) = 0;
 		virtual void OnShutdown(/*TODO: Shutdown reason*/) = 0;
 
@@ -23,7 +26,7 @@ namespace PAL
 
 	protected:
 		SharedPtr<RuntimeRenderer> m_RuntimeRenderer;
-		SharedPtr<World> m_CurrentWorld;
+		SharedPtr<World> m_CurrentWorld; // maybe this should be part of engine class ? 
 		glm::vec2 m_ViewportSize = { 0.0f,0.0f }; // this could be viewport in the editor or the whole window 
 	};
 

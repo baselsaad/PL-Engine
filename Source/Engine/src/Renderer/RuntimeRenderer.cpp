@@ -32,7 +32,7 @@ namespace PAL
 		}
 
 		m_RenderAPI->Init(spec.ApiSpec);
-		m_BatchRenderer = new BatchRenderer(VulkanContext::GetVulkanDevice()->GetMainCommandBuffer());
+		m_BatchRenderer = new BatchRenderer();
 	}
 
 	void RuntimeRenderer::Shutdown()
@@ -71,8 +71,6 @@ namespace PAL
 				m_RenderAPI->DrawQuad(vertexBuffer, m_BatchRenderer->GetQuadIndexBuffer(), indexCount, m_Projection);
 			});
 		}
-
-		
 	}
 
 	void RuntimeRenderer::EndFrame()
@@ -102,12 +100,12 @@ namespace PAL
 		m_RenderAPI->EndMainPass();
 	}
 
-	void RuntimeRenderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color)
+	void RuntimeRenderer::DrawQuad(const TransformComponent& transform, const glm::vec4& color, uint32_t entityID /* -1 */)
 	{
-		DrawQuad(transform.GetTransformMatrix(), color);
+		DrawQuad(transform.GetTransformMatrix(), color, entityID);
 	}
 
-	void RuntimeRenderer::DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color)
+	void RuntimeRenderer::DrawQuad(const glm::mat4 transformationMatrix, const glm::vec4& color, uint32_t entityID)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -129,11 +127,11 @@ namespace PAL
 		m_RenderAPI->WaitForIdle();
 	}
 
-	void RuntimeRenderer::ResizeFrameBuffer(uint32_t width, uint32_t height)
+	void RuntimeRenderer::ResizeFrameBuffer(uint32_t width, uint32_t height, int frameIndex)
 	{
 		PAL_ASSERT(m_RenderAPI != nullptr, "No RenderAPI is Used");
 
-		m_RenderAPI->ResizeFrameBuffer(width, height);
+		m_RenderAPI->ResizeFrameBuffer(width, height, frameIndex);
 	}
 
 	void* RuntimeRenderer::GetFinalImage(uint32_t index /*= 0*/)

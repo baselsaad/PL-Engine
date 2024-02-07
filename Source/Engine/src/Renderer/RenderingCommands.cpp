@@ -22,7 +22,7 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		uint32_t offset = 0;
+		size_t offset = 0;
 
 		while (offset < m_BufferUsed)
 		{
@@ -39,7 +39,7 @@ namespace PAL
 
 	void CommandsQueue::Clear()
 	{
-		uint32_t offset = 0;
+		size_t offset = 0;
 
 		while (offset < m_BufferUsed)
 		{

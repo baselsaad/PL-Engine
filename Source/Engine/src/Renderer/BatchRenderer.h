@@ -20,6 +20,35 @@ namespace PAL
 			glm::vec4(-0.5f,  0.5f, 0.0f, 1.0f)
 		};
 
+		/*
+		* -0,5(3) 			0,5(2)
+		*
+		*
+		* -0,5(0)			0,5(1)
+		*/
+
+		static glm::vec4 CalculateAABBMin(glm::mat4& tranMatrix)
+		{
+			return tranMatrix * s_QuadVertexDefaultPositions[0];
+		}
+
+		static glm::vec4 CalculateAABBMax(glm::mat4& tranMatrix)
+		{
+			//glm::vec3 maxPoint(-FLT_MAX);
+			//for (int i = 0; i < 4; ++i)
+			//{
+			//	auto copy = tranMatrix * s_QuadVertexDefaultPositions[i];
+
+			//	maxPoint.x = glm::max(maxPoint.x, copy.x);
+			//	maxPoint.y = glm::max(maxPoint.y, copy.y);
+			//	maxPoint.z = glm::max(maxPoint.z, copy.z);
+			//}
+			//return maxPoint;
+
+			return tranMatrix * s_QuadVertexDefaultPositions[2];
+		}
+
+
 		// for debuging
 		int FrameIndex = 0;
 		int BatchNumber = 0;
@@ -32,7 +61,7 @@ namespace PAL
 	class BatchRenderer
 	{
 	public:
-		BatchRenderer(const SharedPtr<CommandBuffer>& cmBuffer);
+		BatchRenderer();
 		~BatchRenderer();
 
 		void Begin();
@@ -42,6 +71,7 @@ namespace PAL
 		//calculate TransformationMatrix in GPU 
 		// void AddQuadToBatch(const glm::vec3& translation, const glm::vec3& scale, const glm::vec4& color);
 
+		// Upload the data to GPU vertexbuffer 
 		void BindCurrentQuadBatch();
 		void FindOrCreateNewQuadBatch();
 
@@ -55,10 +85,10 @@ namespace PAL
 		//---------------------------------------------------------------------------------------------------------
 		// Quads
 		//---------------------------------------------------------------------------------------------------------
-		
+
 		// Data on CPU-mem before uploading to gpu 
-		QuadVertex* m_QuadVertexBufferBase = nullptr;
-		QuadVertex* m_QuadVertexBufferPtr = nullptr;
+		QuadVertex* m_QuadVertexBuffer = nullptr;
+		uint32_t m_QuadVerticesCount = 0;
 
 		// Vector of batches for every frame (3 frames on flight)
 		std::vector<QuadBatch> m_QuadBatchesArray[3];

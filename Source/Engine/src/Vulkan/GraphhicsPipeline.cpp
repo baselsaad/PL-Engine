@@ -30,15 +30,13 @@ namespace PAL
 		fragShaderStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
+		 
 		// Vertex input
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		vertexInputInfo.vertexBindingDescriptionCount = 0;
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-
-		// pVertexBindingDescriptions & pVertexAttributeDescriptions (VertexBuffer Input)
 
 		auto bindingDescription = VulkanQuadVertex::GetBindingDescription();
 		auto attributeDescriptions = VulkanQuadVertex::GetAttributeDescriptions();
@@ -83,7 +81,7 @@ namespace PAL
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;;
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachment.blendEnable = VK_TRUE;
 
 		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -101,10 +99,15 @@ namespace PAL
 			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		}
 
+		std::vector<VkPipelineColorBlendAttachmentState> states;
+		states.push_back(colorBlendAttachment);
+		// another color attachment 
+		// states.push_back(colorBlendAttachment);
+
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.attachmentCount = states.size();
+		colorBlending.pAttachments = states.data();
 
 		std::vector<VkDynamicState> dynamicStates =
 		{
@@ -117,17 +120,26 @@ namespace PAL
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(glm::mat4); // Size of transformation matrix
+		// Push Constant for Vertex Shader
+		VkPushConstantRange vertexPushConstantRange{};
+		vertexPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		vertexPushConstantRange.offset = 0;
+		vertexPushConstantRange.size = sizeof(glm::mat4); // Size of transformation matrix
+
+		// Push Constant for Fragment Shader
+		//VkPushConstantRange fragmentPushConstantRange{};
+		//fragmentPushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		//fragmentPushConstantRange.offset = vertexPushConstantRange.size; // Adjusted offset
+		//fragmentPushConstantRange.size = sizeof(glm::vec2); // Size of vec2 for mouse position
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 0;
 		pipelineLayoutInfo.pSetLayouts = nullptr;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		pipelineLayoutInfo.pushConstantRangeCount = 1; // count to include both push constants
+		//VkPushConstantRange pushConstantRanges[] = { vertexPushConstantRange, fragmentPushConstantRange };
+		VkPushConstantRange pushConstantRanges[] = { vertexPushConstantRange };
+		pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(VulkanContext::GetVulkanDevice()->GetVkDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout));
 

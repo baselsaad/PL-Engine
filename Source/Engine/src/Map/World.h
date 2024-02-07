@@ -6,6 +6,7 @@ namespace PAL
 {
 	class Camera;
 	class Entity;
+	class EventHandler;
 	class RuntimeRenderer;
 
 	class World
@@ -15,9 +16,12 @@ namespace PAL
 		virtual ~World();
 
 		void BeginPlay();
+		void SetupInput(EventHandler& eventHandler);
 		void OnUpdate(float deltaTime);
 		void OnRender(float deltaTime);
 		void EndPlay();
+
+		
 
 		template<typename ComponentType>
 		void RegisterComponent(Entity* entity);
@@ -27,6 +31,8 @@ namespace PAL
 		EntityID OnCreateNewEntity();
 
 		inline Registry& GetRegisteredComponents() { return m_RegisteredComponents; }
+		inline const std::string& GetWorldName() const { return m_WorldName; }
+		inline const SharedPtr<Camera>& GetActiveCamera() const { return m_ActiveCamera; }
 
 	private:
 		template<typename ComponentType>
@@ -40,6 +46,7 @@ namespace PAL
 	private:
 		Registry m_RegisteredComponents;
 		SharedPtr<Camera> m_ActiveCamera;
+		std::string m_WorldName;
 
 		friend class Entity;
 	};

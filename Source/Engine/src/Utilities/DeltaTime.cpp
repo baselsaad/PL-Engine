@@ -8,7 +8,7 @@ namespace PAL
 	void DeltaTime::Update()
 	{
 		// DeltaTime
-		double currentTime = glfwGetTime();
+		float currentTime = (float)glfwGetTime();
 		m_DeltaTime.FrameTime = currentTime - m_DeltaTime.LastFrameTime;
 		m_DeltaTime.LastFrameTime = currentTime;
 
@@ -18,7 +18,7 @@ namespace PAL
 
 		if (currentTime - m_AvgData.LastFrameTime >= 1.0)
 		{
-			m_AvgData.FPS = m_AvgData.FrameCount / (currentTime - m_AvgData.LastFrameTime);
+			m_AvgData.FPS = m_AvgData.FrameCount / (int)(currentTime - m_AvgData.LastFrameTime);
 			m_AvgData.AvgFrameTime = m_AvgData.TotalFrameTimeInOneSec / m_AvgData.FPS;
 
 			m_AvgData.LastFrameTime = currentTime;

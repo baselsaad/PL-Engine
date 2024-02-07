@@ -18,7 +18,7 @@ namespace PAL
 	class VulkanSwapChain
 	{
 	public:
-		using CallbackType = std::function<void(uint32_t newWidth, uint32_t newHeight)>;
+		using CallbackType = std::function<void(uint32_t newWidth, uint32_t newHeight, bool force)>;
 
 		VulkanSwapChain() = default;
 		~VulkanSwapChain();
