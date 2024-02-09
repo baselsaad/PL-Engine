@@ -33,9 +33,9 @@ namespace PAL
 		inline VkFramebuffer GetFramebuffer(uint32_t index) const { return m_Framebuffers[index]; };
 
 		inline VulkanImage* GetFrameBufferImage(uint32_t index) { return &m_FramebufferImages[index]; }
-		
-		inline VulkanImage* GetFrameBufferImage() 
-		{ 
+
+		inline VulkanImage* GetFrameBufferImage()
+		{
 			return &m_FramebufferImages[Engine::Get()->GetWindow()->GetSwapChain()->GetImageIndex()];
 		}
 
@@ -49,8 +49,8 @@ namespace PAL
 		void CreateFramebuffer(uint32_t index);
 		void CreateColorResources(int index);
 		void CreateObjectIDResources(int index);
-		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-			 VkImage& image, VmaAllocation& outAllocation);
+		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
+			 VkImage& image, VmaAllocation& outAllocation, VmaMemoryUsage vmaUsage = VMA_MEMORY_USAGE_GPU_ONLY, VkMemoryPropertyFlags propertyFlags = 0);
 
 		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
@@ -75,6 +75,9 @@ namespace PAL
 
 		std::vector<VmaAllocation> m_ImageAllocations;
 		std::vector<VmaAllocation> m_ObjectIDAllocations;
+
+		std::vector<VkBuffer> m_StaggingBuffers;
+		std::vector<VmaAllocation> m_StaggingBufferAllocations;
 	};
 }
 

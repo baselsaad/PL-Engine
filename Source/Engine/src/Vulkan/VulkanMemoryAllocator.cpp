@@ -64,10 +64,11 @@ namespace PAL
 		vmaUnmapMemory(s_Allocator, allocation);
 	}
 
-	VmaAllocation VulkanMemoryAllocator::AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage)
+	VmaAllocation VulkanMemoryAllocator::AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage, VkMemoryPropertyFlags propertyFlags)
 	{
 		VmaAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.usage = usage;
+		//allocCreateInfo.requiredFlags = propertyFlags;
 
 		VmaAllocation allocation;
 		vmaCreateImage(s_Allocator, &imageCreateInfo, &allocCreateInfo, &outImage, &allocation, nullptr);

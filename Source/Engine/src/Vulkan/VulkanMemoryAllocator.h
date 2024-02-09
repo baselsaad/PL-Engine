@@ -19,7 +19,7 @@ namespace PAL
 		VmaAllocation AllocateBuffer(VkBufferCreateInfo bufferCreateInfo, VmaMemoryUsage usage, VkBuffer& outBuffer);
 		void DestroyBuffer(VkBuffer buffer, VmaAllocation allocation);
 
-		VmaAllocation AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage);
+		VmaAllocation AllocateImage(VkImageCreateInfo imageCreateInfo, VmaMemoryUsage usage, VkImage& outImage, VkMemoryPropertyFlags propertyFlags = 0);
 		void DestroyImage(VkImage image, VmaAllocation allocation);
 
 

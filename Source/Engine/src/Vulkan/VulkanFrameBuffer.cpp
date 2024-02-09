@@ -154,7 +154,7 @@ namespace PAL
 	}
 
 	void VulkanFramebuffer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-		VkImage& image, VmaAllocation& outAllocation)
+		VkImage& image, VmaAllocation& outAllocation, VmaMemoryUsage vmaUsage , VkMemoryPropertyFlags propertyFlags)
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -172,7 +172,7 @@ namespace PAL
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VulkanMemoryAllocator allocator("FrameBuffer Image");
-		outAllocation = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_GPU_ONLY, image);
+		outAllocation = allocator.AllocateImage(imageInfo, vmaUsage, image);
 	}
 
 	VkImageView VulkanFramebuffer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
@@ -244,7 +244,7 @@ namespace PAL
 		return VK_FORMAT_UNDEFINED;
 	}
 
-	void createBuffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void CreateBuffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 	{
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -265,7 +265,7 @@ namespace PAL
 		vkBindBufferMemory(device, buffer, bufferMemory, 0);
 	}
 
-	void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height)
+	void CopyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height)
 	{
 		VkCommandBuffer commandBuffer = VulkanContext::GetVulkanDevice()->BeginSingleTimeCommands();
 
@@ -284,35 +284,29 @@ namespace PAL
 
 	uint32_t VulkanFramebuffer::ReadPixelsFromImage(uint32_t pixelX, uint32_t pixelY)
 	{
+		//@TODO: use Vma
 		int imageIndex = Engine::Get()->GetWindow()->GetCurrentFrame();
-
-		// Transition the image layout to transfer source optimal
 		//VulkanUtilities::TransitionImageLayout(m_ObjectIDAttachment[imageIndex].ColorImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-		// Create a staging buffer
 		VkDeviceSize imageSize = m_Spec.Width * m_Spec.Height * 4 * sizeof(uint8_t);
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		createBuffer(m_Device, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+		CreateBuffer(m_Device, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		// Copy the pixel data from the image to the staging buffer
-		copyImageToBuffer(m_ObjectIDAttachment[imageIndex].ColorImage, stagingBuffer, m_Spec.Width, m_Spec.Height);
+		CopyImageToBuffer(m_ObjectIDAttachment[imageIndex].ColorImage, stagingBuffer, m_Spec.Width, m_Spec.Height);
 
-		// Map the staging buffer memory and access the pixel data
+		// Map the staging buffer memory to access the pixel data
 		void* data;
 		vkMapMemory(m_Device, stagingBufferMemory, 0, imageSize, 0, &data);
 
-		// Access and print the pixel data
 		uint32_t* pixels = static_cast<uint32_t*>(data);
-
-		// Calculate the index of the pixel in the linear array
 		uint32_t pixelIndex = static_cast<uint32_t>(pixelY) * m_Spec.Width + static_cast<uint32_t>(pixelX);
 
 		if (pixelIndex > m_Spec.Width * m_Spec.Height)
 			return 0;
 
-		// Read the pixel value from the array
 		uint32_t pixelValue = pixels[pixelIndex];
 
 		glm::vec4 objectID;
