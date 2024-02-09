@@ -3,6 +3,7 @@
 // Vertex Attributes 
 layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec4 a_Color;
+layout(location = 2) in vec4 a_ObjectID;
 
 layout(push_constant) uniform PushConstants 
 {
@@ -11,7 +12,7 @@ layout(push_constant) uniform PushConstants
 
 // Outputs to fragment shader
 layout(location = 0) out vec4 v_FragColor;
-
+layout(location = 1) out flat vec4 v_ObjectID;
 //-----------------------------------------------------------------------------------------------------------------------------------------------
 
 mat4 CreateTranslationMatrix(vec3 translation) 
@@ -44,4 +45,5 @@ void main()
 
     gl_Position = pc.u_MVP * vec4(a_Position, 1.0);
     v_FragColor = a_Color;
+    v_ObjectID = a_ObjectID;
 }

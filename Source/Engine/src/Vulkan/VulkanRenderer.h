@@ -39,6 +39,7 @@ namespace PAL
 
 		inline static constexpr int GetMaxFramesInFlight() { return MAX_FRAMES_IN_FLIGHT; }
 		inline const SharedPtr<RenderPass>& GetRenderPass() { return m_MainRenderPass; }
+		inline const SharedPtr<VulkanFramebuffer>& GetMainFrameBuffer() { return m_MainFrameBuffer; }
 		inline const SharedPtr<PipeLine> GetGraphicsPipline() { return m_Pipline; }
 
 

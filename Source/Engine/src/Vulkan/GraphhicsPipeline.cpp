@@ -93,16 +93,18 @@ namespace PAL
 		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 
+		std::vector<VkPipelineColorBlendAttachmentState> states;
+
 		if (renderpass->GetRenderpassSpec().Target == PresentTarget::CustomViewport)
 		{
 			colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 			colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+
+			//another color attachment
+			states.push_back(colorBlendAttachment); // same  BlendAttachment for ObjectID
 		}
 
-		std::vector<VkPipelineColorBlendAttachmentState> states;
 		states.push_back(colorBlendAttachment);
-		// another color attachment 
-		// states.push_back(colorBlendAttachment);
 
 		VkPipelineColorBlendStateCreateInfo colorBlending{};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -125,12 +127,6 @@ namespace PAL
 		vertexPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		vertexPushConstantRange.offset = 0;
 		vertexPushConstantRange.size = sizeof(glm::mat4); // Size of transformation matrix
-
-		// Push Constant for Fragment Shader
-		//VkPushConstantRange fragmentPushConstantRange{};
-		//fragmentPushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		//fragmentPushConstantRange.offset = vertexPushConstantRange.size; // Adjusted offset
-		//fragmentPushConstantRange.size = sizeof(glm::vec2); // Size of vec2 for mouse position
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

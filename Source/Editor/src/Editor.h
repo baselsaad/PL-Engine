@@ -47,7 +47,7 @@ namespace PAL
 
 		void EndFrame();
 
-		glm::vec2 GetMousePosRelativeViewport(const ImVec2& imguiMousePos, const ImVec2& viewportPos);
+		std::pair<int, int> GetMousePosRelativeViewport(const ImVec2& viewportPos);
 		void OnMousePressed(const MouseButtonPressedEvent& mouseEvent);
 
 		inline ImFont* GetFont(ImGuiFonts font = ImGuiFonts::Regular) { return m_ImGuiFonts[font]; }
@@ -63,7 +63,7 @@ namespace PAL
 		SharedPtr<VulkanSwapChain> m_Swapchain;
 		
 		ImVec2 m_ViewportPosition;
-		std::array< ImVec2, 2> m_ViewportBound;
+		std::array< glm::vec2, 2> m_ViewportBound;
 		glm::vec2 m_MousePos = { 0.0f, 0.0f };
 	};
 }

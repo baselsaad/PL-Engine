@@ -27,6 +27,8 @@ namespace PAL
 		void Resize(uint32_t width, uint32_t height, bool force = false);
 		void ResizeOnIndex(uint32_t width, uint32_t height, int index);
 		void Shutdown();
+		uint32_t ReadPixelsFromImage(uint32_t pixelX, uint32_t pixelY);
+
 
 		inline VkFramebuffer GetFramebuffer(uint32_t index) const { return m_Framebuffers[index]; };
 
@@ -46,6 +48,7 @@ namespace PAL
 	private:
 		void CreateFramebuffer(uint32_t index);
 		void CreateColorResources(int index);
+		void CreateObjectIDResources(int index);
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 			 VkImage& image, VmaAllocation& outAllocation);
 
@@ -62,6 +65,7 @@ namespace PAL
 		FramebufferSpecification m_Spec;
 
 		std::vector<VulkanImage> m_FramebufferImages;
+		std::vector<VulkanImage> m_ObjectIDAttachment;
 
 		VkImage m_DepthImage;
 		VkImageView m_DepthImageView;
@@ -70,6 +74,7 @@ namespace PAL
 		VkRenderPass m_RenderPass;
 
 		std::vector<VmaAllocation> m_ImageAllocations;
+		std::vector<VmaAllocation> m_ObjectIDAllocations;
 	};
 }
 

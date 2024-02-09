@@ -18,9 +18,9 @@ namespace PAL
 			return bindingDescription;
 		}
 
-		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions()
+		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
 		{
-			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+			std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
 			// Position attribute
 			attributeDescriptions[0].binding = 0;
@@ -33,6 +33,11 @@ namespace PAL
 			attributeDescriptions[1].location = 1;
 			attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
+
+			attributeDescriptions[2].binding = 0;
+			attributeDescriptions[2].location = 2;
+			attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+			attributeDescriptions[2].offset = offsetof(QuadVertex, ObjectId);
 
 			return attributeDescriptions;
 		}

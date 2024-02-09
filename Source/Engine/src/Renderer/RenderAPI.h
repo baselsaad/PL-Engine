@@ -19,7 +19,6 @@ namespace PAL
 		uint32_t Height;
 		bool UseDepth = false;
 		PresentTarget Target;	// Indicates if the framebuffer is for swapchain images
-		uint32_t AttachmentCount = 1;
 
 		std::string DebugName;
 	};

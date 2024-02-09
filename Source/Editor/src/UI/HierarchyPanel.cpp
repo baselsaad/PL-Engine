@@ -89,15 +89,18 @@ namespace PAL
 		if (openAction != -1)
 			ImGui::SetNextItemOpen(openAction != 0);
 
+		const char* entityName;
 		auto& tagComponent = entity.GetComponent<TagComponent>();
 		if (tagComponent.Tag.empty())
-			return;
+			entityName = "Unknowen";
+		else
+			entityName = tagComponent.Tag.c_str();
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 		if (m_SelectedEntity == entity)
 			flags |= ImGuiTreeNodeFlags_Selected;
 
-		bool treeOpend = ImGui::TreeNodeEx(tagComponent.Tag.c_str(), flags);
+		bool treeOpend = ImGui::TreeNodeEx(entityName, flags);
 		if (ImGui::IsItemClicked())
 			m_SelectedEntity = entity;
 

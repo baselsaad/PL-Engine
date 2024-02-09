@@ -116,7 +116,13 @@ namespace PAL
 			m_BatchRenderer->FindOrCreateNewQuadBatch();
 		}
 
-		m_BatchRenderer->AddQuadToBatch(transformationMatrix, color);
+		glm::vec4 objectID; 
+		objectID.a = 1.0f;
+		objectID.b = static_cast<float>((entityID >> 16) & 0xFF) / 255.0f;
+		objectID.g = static_cast<float>((entityID >> 8) & 0xFF) / 255.0f;
+		objectID.r = static_cast<float>((entityID >> 0) & 0xFF) / 255.0f;
+
+		m_BatchRenderer->AddQuadToBatch(transformationMatrix, color, objectID);
 		s_RenderStats.Quads++;
 	}
 

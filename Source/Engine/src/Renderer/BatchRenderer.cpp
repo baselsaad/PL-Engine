@@ -113,7 +113,7 @@ namespace PAL
 		}
 	}
 	 
-	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec4& color)
+	void BatchRenderer::AddQuadToBatch(const glm::mat4& transform, const glm::vec4& color, const glm::vec4& objectId)
 	{
 		CORE_PROFILER_FUNC();
 
@@ -122,6 +122,7 @@ namespace PAL
 		{
 			m_QuadVertexBuffer[m_QuadVerticesCount].Pos = transform * QuadBatch::s_QuadVertexDefaultPositions[i];
 			m_QuadVertexBuffer[m_QuadVerticesCount].Color = color;
+			m_QuadVertexBuffer[m_QuadVerticesCount].ObjectId = objectId;
 			m_QuadVerticesCount++;
 		}
 

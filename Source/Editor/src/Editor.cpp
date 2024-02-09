@@ -66,7 +66,6 @@ namespace PAL
 		mainFramebuffer.Width = Engine::Get()->GetWindow()->GetWindowWidth();
 		mainFramebuffer.Height = Engine::Get()->GetWindow()->GetWindowHeight();
 		mainFramebuffer.UseDepth = false;
-		mainFramebuffer.AttachmentCount = 1;
 		mainFramebuffer.Target = PresentTarget::CustomViewport;
 		mainFramebuffer.DebugName = "Main Framebuffer";
 
@@ -85,13 +84,13 @@ namespace PAL
 
 		auto& window = Engine::Get()->GetWindow();
 
-		m_RuntimeRenderer->ResizeFrameBuffer(window->GetWindowWidth(), window->GetWindowHeight());
+		//m_RuntimeRenderer->ResizeFrameBuffer(window->GetWindowWidth(), window->GetWindowHeight());
 
 		if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
 		{
 			// When viewport outside the window, it does not render !!
-			//m_RuntimeRenderer->ResizeFrameBuffer((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			m_CurrentWorld->GetActiveCamera().As<OrthographicCamera>()->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_RuntimeRenderer->ResizeFrameBuffer((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			//m_CurrentWorld->GetActiveCamera().As<OrthographicCamera>()->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
 		else
 		{
@@ -221,7 +220,6 @@ namespace PAL
 		imguiSpec.Width = swapchain->GetSwapChainExtent().width;
 		imguiSpec.Height = swapchain->GetSwapChainExtent().height;
 		imguiSpec.UseDepth = false;
-		imguiSpec.AttachmentCount = 1;
 		imguiSpec.Target = PresentTarget::Swapchain;
 		imguiSpec.DebugName = "imgui Framebuffer";
 
@@ -698,13 +696,11 @@ namespace PAL
 		auto windowSize = ImGui::GetWindowSize();
 		ImVec2 minBound = ImGui::GetWindowPos();
 
-		auto viewportOffset = ImGui::GetCursorPos(); // includes tab bar
-		minBound.x -= viewportOffset.x;
-		minBound.y -= viewportOffset.y;
-
-		ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
-		m_ViewportBound[0] = { minBound.x, minBound.y };
-		m_ViewportBound[1] = { maxBound.x, maxBound.y };
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+		auto viewportOffset = ImGui::GetWindowPos(); // Title bar
+		m_ViewportBound[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_ViewportBound[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
 		if (m_RuntimeRenderer->GetRuntimeRendererSpec().ApiSpec.MainFrameBufferSpec.Target == PresentTarget::CustomViewport)
 		{
@@ -813,19 +809,15 @@ namespace PAL
 		}
 	}
 
-	static bool IsMouseWithinPanel(const ImVec2& mousePos, const ImVec2& panelPos, const glm::vec2& panelSize)
+	std::pair<int, int> Editor::GetMousePosRelativeViewport(const ImVec2& viewportPos)
 	{
-		return mousePos.x >= panelPos.x && mousePos.x <= panelPos.x + panelSize.x &&
-			mousePos.y >= panelPos.y && mousePos.y <= panelPos.y + panelSize.y;
-	}
+		auto [mx, my] = ImGui::GetMousePos();
+		glm::vec2 viewportSize = m_ViewportBound[1] - m_ViewportBound[0];
 
-	glm::vec2 Editor::GetMousePosRelativeViewport(const ImVec2& imguiMousePos, const ImVec2& viewportPos)
-	{
-		glm::vec2 result;
-		result.x = ImGui::GetMousePos().x - viewportPos.x;
-		result.y = ImGui::GetMousePos().y - viewportPos.y;
+		int resultX = (int)(mx - viewportPos.x);
+		int resultY = (int)(viewportSize.y - (my - m_ViewportBound[0].y));
 
-		return result;
+		return { resultX ,resultY };
 	}
 
 	static bool PointInsideAABB(const glm::vec3& point, const AABB& aabb)
@@ -836,7 +828,7 @@ namespace PAL
 
 		//vectorized comparison
 		glm::bvec3 inside = glm::greaterThanEqual(point, aabb.Min) && glm::lessThanEqual(point, aabb.Max);
-		
+
 		// Check if all components are inside the AABB
 		return inside.x && inside.y && inside.z;
 	}
@@ -845,35 +837,25 @@ namespace PAL
 	{
 		CORE_PROFILER_FUNC();
 
-		ImVec2 mousePos = ImGui::GetMousePos();
-		glm::vec2 relativeMousePos = GetMousePosRelativeViewport(mousePos, m_ViewportPosition);
+		auto [mx, my] = GetMousePosRelativeViewport(m_ViewportPosition);
 
-		if (relativeMousePos.x < 0 || relativeMousePos.x > m_ViewportSize.x
-			|| relativeMousePos.y < 0 || relativeMousePos.y > m_ViewportSize.y)
+		if (mx >= 0 && my >= 0 && mx < (int)m_ViewportSize.x && my < (int)m_ViewportSize.y)
 		{
-			//Debug::LogWarn("Outside viewport");
-			return;
-		}
+			uint32_t entityID = m_RuntimeRenderer->GetRenderAPI().As<VulkanAPI>()->GetMainFrameBuffer()->ReadPixelsFromImage(mx, my);
 
-		auto& camera = m_CurrentWorld->GetActiveCamera();
-		glm::vec3 worldPos = camera->ScreenPosToWorld(relativeMousePos, m_ViewportSize);
-
-		Entity selectedEntity{};
-		m_CurrentWorld->GetRegisteredComponents().view<TransformComponent>().each([&](auto entityId, const TransformComponent& transform)
-		{
-			AABB quadAABB;
-			quadAABB.Min = QuadBatch::CalculateAABBMin(transform.GetTransformMatrix());
-			quadAABB.Max = QuadBatch::CalculateAABBMax(transform.GetTransformMatrix());
-
-			if (PointInsideAABB(worldPos, quadAABB))
+			if (entityID > 0)
 			{
-				selectedEntity.SetEntityId(entityId);
+				Entity selectedEntity;
+				selectedEntity.SetEntityId((EntityID)(entityID - 1));
 				selectedEntity.SetWorld(m_CurrentWorld.StdSharedPtr.get());
-				return;
-			}
-		});
 
-		m_HierarchyPanel.SetSelectedEntity(selectedEntity);
+				m_HierarchyPanel.SetSelectedEntity(selectedEntity);
+			}
+			else
+			{
+				m_HierarchyPanel.SetSelectedEntity({});
+			}
+		}
 	}
 
 	void Editor::SetupInput(EventHandler& eventHandler)

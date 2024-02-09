@@ -35,28 +35,29 @@ namespace PAL
 
 		attachmentDescriptions.push_back(colorAttachmentDesc);
 
-	#if 0
-		// Object ID attachment description (if used)
-		if (renderpassSpec.UseObjectIdAttachment)
+
+		std::vector<VkAttachmentReference> colorAttachmentRefs;
+		colorAttachmentRefs.push_back({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
+
+		if (renderpassSpec.Target == PresentTarget::CustomViewport)
 		{
+			// Object ID attachment description
 			VkAttachmentDescription objectIdAttachmentDesc = {};
 			objectIdAttachmentDesc.flags = 0;
-			objectIdAttachmentDesc.format = m_RenderpassSpec.ColorFormat;
+			objectIdAttachmentDesc.format = VK_FORMAT_R8G8B8A8_UNORM;
 			objectIdAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 			objectIdAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			objectIdAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			objectIdAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			objectIdAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			objectIdAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			objectIdAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			objectIdAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
 			attachmentDescriptions.push_back(objectIdAttachmentDesc);
+			colorAttachmentRefs.push_back({ 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 		}
-	#endif
 
-		std::vector<VkAttachmentReference> colorAttachmentRefs;
-		colorAttachmentRefs.push_back({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-		//colorAttachmentRefs.push_back({ 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -90,19 +91,21 @@ namespace PAL
 
 	void RenderPass::Begin(VkCommandBuffer currentCommandBuffer, uint32_t imageIndex)
 	{
-		const SharedPtr<VulkanSwapChain>& swapchain = Engine::Get()->GetWindow()->GetSwapChain();
-
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
 		renderPassInfo.framebuffer = m_Framebuffer->GetFramebuffer(imageIndex);
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };;
+		renderPassInfo.renderArea.extent = { m_Framebuffer->GetSpecification().Width, m_Framebuffer->GetSpecification().Height };
 
-		std::array<VkClearValue, 1> clearValues;
-		clearValues[0] = { 0.0f, 0.0f,0.0f, 1.0f };
+		std::vector<VkClearValue> clearValues;
 
-		renderPassInfo.clearValueCount = 1;
+		clearValues.push_back({ 0.0f, 0.0f,0.0f, 1.0f });
+
+		if (m_RenderpassSpec.Target == PresentTarget::CustomViewport)
+			clearValues.push_back({ 0.0f, 0.0f,0.0f, 0.0f });
+
+		renderPassInfo.clearValueCount = clearValues.size();
 		renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(currentCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

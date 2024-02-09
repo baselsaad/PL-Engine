@@ -41,6 +41,9 @@ namespace PAL
 				allocator.DestroyImage(m_FramebufferImages[i].ColorImage, m_ImageAllocations[i]);
 				vkDestroyImageView(m_Device, m_FramebufferImages[i].ColorImageView, nullptr);
 				vkDestroySampler(m_Device, m_FramebufferImages[i].TextureSampler, nullptr);
+
+				allocator.DestroyImage(m_ObjectIDAttachment[i].ColorImage, m_ObjectIDAllocations[i]);
+				vkDestroyImageView(m_Device, m_ObjectIDAttachment[i].ColorImageView, nullptr);
 			}
 
 			vkDestroyFramebuffer(m_Device, m_Framebuffers[i], nullptr);
@@ -60,6 +63,12 @@ namespace PAL
 		m_ImageAllocations.resize(VulkanAPI::GetMaxFramesInFlight());
 		m_Framebuffers.resize(VulkanAPI::GetMaxFramesInFlight());
 
+		if (m_Spec.Target == PresentTarget::CustomViewport)
+		{
+			m_ObjectIDAllocations.resize(VulkanAPI::GetMaxFramesInFlight());
+			m_ObjectIDAttachment.resize(VulkanAPI::GetMaxFramesInFlight());
+		}
+
 		for (int i = 0; i < VulkanAPI::GetMaxFramesInFlight(); ++i)
 		{
 			ResizeOnIndex(width, height, i);
@@ -76,6 +85,9 @@ namespace PAL
 			vkDestroyImageView(m_Device, m_FramebufferImages[index].ColorImageView, nullptr);
 			allocator.DestroyImage(m_FramebufferImages[index].ColorImage, m_ImageAllocations[index]);
 			vkDestroySampler(m_Device, m_FramebufferImages[index].TextureSampler, nullptr);
+
+			vkDestroyImageView(m_Device, m_ObjectIDAttachment[index].ColorImageView, nullptr);
+			allocator.DestroyImage(m_ObjectIDAttachment[index].ColorImage, m_ObjectIDAllocations[index]);
 		}
 
 		if (m_Spec.Target == PresentTarget::Swapchain)
@@ -88,6 +100,8 @@ namespace PAL
 		else
 		{
 			CreateColorResources(index);
+			if (m_Spec.Target == PresentTarget::CustomViewport)
+				CreateObjectIDResources(index);
 		}
 
 		CreateFramebuffer(index);
@@ -97,18 +111,24 @@ namespace PAL
 	{
 		m_FramebufferImages[index].ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		std::array<VkImageView, 1> attachments;
-		attachments[0] = m_FramebufferImages[index].ColorImageView; // Color attachment
+		std::vector<VkImageView> attachments;
+		attachments.push_back(m_FramebufferImages[index].ColorImageView);// Color attachment
+
+		if (m_Spec.Target == PresentTarget::CustomViewport)
+		{
+			m_ObjectIDAttachment[index].ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			attachments.push_back(m_ObjectIDAttachment[index].ColorImageView); // ObjectID attachment
+		}
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.attachmentCount = m_Spec.AttachmentCount;
+		framebufferInfo.attachmentCount = attachments.size();
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = m_Spec.Width;
 		framebufferInfo.height = m_Spec.Height;
 		framebufferInfo.layers = 1;
-		   
+
 		VK_CHECK_RESULT(vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_Framebuffers[index]));
 	}
 
@@ -121,6 +141,16 @@ namespace PAL
 
 		m_FramebufferImages[index].ColorImageView = CreateImageView(m_FramebufferImages[index].ColorImage, m_Spec.ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 		CreateTextureSampler(&m_FramebufferImages[index].TextureSampler);
+	}
+
+	void VulkanFramebuffer::CreateObjectIDResources(int index)
+	{
+		auto format = Engine::Get()->GetWindow()->GetSwapChain()->GetSwapChainImageFormat();
+
+		CreateImage(m_Spec.Width, m_Spec.Height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+				m_ObjectIDAttachment[index].ColorImage, m_ObjectIDAllocations[index]);
+
+		m_ObjectIDAttachment[index].ColorImageView = CreateImageView(m_ObjectIDAttachment[index].ColorImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	void VulkanFramebuffer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
@@ -213,5 +243,96 @@ namespace PAL
 		/* @TODO: Choose a format that supports depth stencil */
 		return VK_FORMAT_UNDEFINED;
 	}
+
+	void createBuffer(VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	{
+		VkBufferCreateInfo bufferInfo = {};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VK_CHECK_RESULT(vkCreateBuffer(device, &bufferInfo, nullptr, &buffer));
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = VulkanUtilities::FindMemoryType(memRequirements.memoryTypeBits, properties);
+		VK_CHECK_RESULT(vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory));
+
+		vkBindBufferMemory(device, buffer, bufferMemory, 0);
+	}
+
+	void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height)
+	{
+		VkCommandBuffer commandBuffer = VulkanContext::GetVulkanDevice()->BeginSingleTimeCommands();
+
+		VkBufferImageCopy region = {};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.layerCount = 1;
+		region.imageExtent = { width, height, 1 };
+
+		vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
+
+		VulkanContext::GetVulkanDevice()->EndSingleTimeCommands(commandBuffer);
+	}
+
+	uint32_t VulkanFramebuffer::ReadPixelsFromImage(uint32_t pixelX, uint32_t pixelY)
+	{
+		int imageIndex = Engine::Get()->GetWindow()->GetCurrentFrame();
+
+		// Transition the image layout to transfer source optimal
+		//VulkanUtilities::TransitionImageLayout(m_ObjectIDAttachment[imageIndex].ColorImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+		// Create a staging buffer
+		VkDeviceSize imageSize = m_Spec.Width * m_Spec.Height * 4 * sizeof(uint8_t);
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer(m_Device, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		// Copy the pixel data from the image to the staging buffer
+		copyImageToBuffer(m_ObjectIDAttachment[imageIndex].ColorImage, stagingBuffer, m_Spec.Width, m_Spec.Height);
+
+		// Map the staging buffer memory and access the pixel data
+		void* data;
+		vkMapMemory(m_Device, stagingBufferMemory, 0, imageSize, 0, &data);
+
+		// Access and print the pixel data
+		uint32_t* pixels = static_cast<uint32_t*>(data);
+
+		// Calculate the index of the pixel in the linear array
+		uint32_t pixelIndex = static_cast<uint32_t>(pixelY) * m_Spec.Width + static_cast<uint32_t>(pixelX);
+
+		if (pixelIndex > m_Spec.Width * m_Spec.Height)
+			return 0;
+
+		// Read the pixel value from the array
+		uint32_t pixelValue = pixels[pixelIndex];
+
+		glm::vec4 objectID;
+		objectID.r = static_cast<float>((pixelValue >> 0) & 0xFF);
+		objectID.g = static_cast<float>((pixelValue >> 8) & 0xFF);
+		objectID.b = static_cast<float>((pixelValue >> 16) & 0xFF);
+
+		// decode the entity ID 
+		uint32_t entityID = 0;
+		entityID |= static_cast<uint32_t>(objectID.b) << 16;
+		entityID |= static_cast<uint32_t>(objectID.g) << 8;
+		entityID |= static_cast<uint32_t>(objectID.r) << 0;
+
+		vkUnmapMemory(m_Device, stagingBufferMemory);
+		// Clean up resources
+		vkDestroyBuffer(m_Device, stagingBuffer, nullptr);
+		vkFreeMemory(m_Device, stagingBufferMemory, nullptr);
+
+		return entityID;
+	}
+
 
 }

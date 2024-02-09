@@ -26,7 +26,7 @@ namespace PAL
 				glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
 
 				Entity entityTest(world);
-				entityTest.GetTransform().Translation = { x, y, -1.0f };
+				entityTest.GetTransform().Translation = { x, y, 0.0f };
 				entityTest.GetTransform().Scale = glm::vec3(0.45f);
 				entityTest.SetColor(color);
 			}
@@ -60,7 +60,7 @@ namespace PAL
 		entityTest2.GetTransform().Translation.x = 2.0f;
 		entityTest2.GetComponent<TagComponent>().Tag = "BlueEntity";
 
-		BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
+		//BenchmarkBatchRenderer(this, (OrthographicCamera&)*m_ActiveCamera);
 
 		if (m_ActiveCamera == nullptr)
 		{
@@ -90,7 +90,7 @@ namespace PAL
 		auto view = m_RegisteredComponents.view<TransformComponent, RenderComponent>();
 		for (auto [entity, transform, renderComponent] : view.each())
 		{
-			Engine::Get()->GetRuntimeRenderer()->DrawQuad(transform, renderComponent.GetColor(), (uint32_t)entity + 100);
+			Engine::Get()->GetRuntimeRenderer()->DrawQuad(transform, renderComponent.GetColor(), (uint32_t)entity + 1); // +1 so 0 will be invalid 
 		}
 	}
 

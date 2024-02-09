@@ -6,6 +6,7 @@ namespace PAL
 	{
 		glm::vec3 Pos;
 		glm::vec4 Color;
+		glm::vec4 ObjectId;
 	};
 
 	class VertexBuffer
