@@ -1,7 +1,5 @@
 # PL-Engine
 
-Welcome to the official repository for PL-Engine, a game engine designed for high-performance graphics and flexible game development.
-
 ## Table of Contents
 - [Features](#features)
 - [Current Progress](#current-progress)
